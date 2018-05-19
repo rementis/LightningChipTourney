@@ -1,0 +1,17 @@
+Lightning Chip Tourney           --by Martin Colello
+
+Using this software you can run a billiards tournament
+in "chip" format.
+
+Each player gets a certain amount of chips, typically
+based on skill level.
+
+The list of players is randomized and then the matchups begin.
+
+Each race is only one game, loser loses a chip.  When you
+are out of chips you are out of the tournament.
+
+If you have Fargo scores the software can also keep track so the
+scores can be entered.  If you are not using Fargo just enter
+anything you like for the Fargo number.
+
