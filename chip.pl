@@ -12,13 +12,19 @@ use Term::ReadKey;
 use List::Util 'shuffle';
 use Term::ANSIColor;
 
+# Get current date and open log file
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+$year = $year + 1900;
+
+my @abbr = qw(January February March April May June July August September October November December);
+
 # Set output file to user's Desktop
-my $desktop = 'chip_results.txt';
+my $desktop = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
 
 if ( $^O =~ /MSWin32/ ) {
   chomp(my $profile = `set userprofile`);
   $profile =~ s/userprofile=//i;
-  $desktop = $profile . "\\desktop\\chip_results.txt";
+  $desktop = $profile . "\\desktop\\$desktop";
 }
 
 # Hold state of screen in case we need to exit program
@@ -27,11 +33,8 @@ my $screen_contents;
 # Set outfile for final results
 my $outfile = "$desktop";
 
-# Get current date and open log file
-my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
-$year = $year + 1900;
 open OUTFILE, ">$outfile" or die "Cannot open results file: $!";
-print OUTFILE "$mon".'/'."$mday".'/'."$year"."\n";
+print OUTFILE "$abbr[$mon]".' '."$mday".' '."$year"."\n";
 print OUTFILE "Lightning Chip Tourney results:                      --by Martin Colello\n\n";
 
 # Setup some global hashes and variables
@@ -528,12 +531,25 @@ sub start_tourney {
   my @counttables = keys(%tables);
   my $counttables = @counttables;
 
+  # Count number of players
+  my @number_of_players = keys(%players);
+  my $number_of_players = @number_of_players;
+  my $number_of_players = $number_of_players / 2;
+
   # If no tables added we can't start the tourney
   if ( $counttables eq 0 ) {
     print "No tables added yet.\n";
     sleep 3;
     return;
   }
+
+  if ( $number_of_players <= $counttables ) {
+    print "Too many tables are configured to start tourney.\n\n";
+    sleep 5;
+    return;
+  }
+
+
   print "\n\n\n\n$counttables tables have been configured.\n";
   print "\n\n\n\n\n\nStart tourney now?\n";
   my $yesorno = yesorno();
