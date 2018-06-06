@@ -12,7 +12,7 @@ use Term::ReadKey;
 use List::Util 'shuffle';
 use Term::ANSIColor;
 
-# Get current date and open log file
+# Get current date
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
 $year = $year + 1900;
 
@@ -33,13 +33,14 @@ my $screen_contents;
 # Set outfile for final results
 my $outfile = "$desktop";
 
+# Open log file
 open OUTFILE, ">$outfile" or die "Cannot open results file: $!";
 print OUTFILE "$abbr[$mon]".' '."$mday".' '."$year"."\n";
 print OUTFILE "Lightning Chip Tourney results:                      --by Martin Colello\n\n";
 
 # Setup some global hashes and variables
-my $color  = 'bold white';
-my $key;
+my $color  = 'bold white'; # Default text color to start with
+my $key;                   # Generic holder for hash keys
 my %players;               # Hash which contains tourney players
 my %tables;                # Hash which contains billiard tables in use
 my $tourney_running = 0;   # Determine if tourney is currently started
@@ -56,8 +57,6 @@ if ( $^O =~ /darwin/ ) {
   system("osascript -e 'tell app \"Terminal\" to set background color of first window to {0, 0, 0, -16373}'");
   system("osascript -e 'tell app \"Terminal\" to set font size of first window to \"12\"'");
   system("osascript -e 'tell app \"Terminal\" to set bounds of front window to {300, 30, 1200, 900}'");
-  #system("osascript -e 'tell app \"Terminal\" to set number of columns to 120'");
-  #system("osascript -e 'tell app \"Terminal\" to set number of rows to 60'");
 }
 
 # If names.txt exits populate the tourney with sample data
@@ -81,6 +80,7 @@ if ( -e 'names.txt' ) {
   $tables{'11'}=1;
 }
 
+# print Lightning Chip Logo
 print "\n\n\n\n\n";
 print " _     _       _     _         _                ____ _     _       \n";
 print "| |   (_) __ _| |__ | |_ _ __ (_)_ __   __ _   / ___| |__ (_)_ __  \n";
@@ -89,12 +89,13 @@ print "| |___| | (_| | | | | |_| | | | | | | | (_| | | |___| | | | | |_) |\n";
 print "|_____|_|\\__, |_| |_|\\__|_| |_|_|_| |_|\\__, |  \\____|_| |_|_| .__/ \n";
 print "         |___/                         |___/                |_|    \n\n\n\n\n\n";
 print "                                           --by Martin Colello\n";
-
 yesorno('any');
 
 # MAIN LOOP of program
 while(1) {
 
+  # Delete players who have zero chips
+  delete_players();
   # Draw the screen
   draw_screen();
 
@@ -189,24 +190,8 @@ sub draw_screen {
   }
   $screen_contents .= "Player:                        Won:       Chips:     Table:\n\n";
   my @players = keys(%players);
-
-  # Check if any player has zero chips and if so delete them.
-  foreach(@players){
-    my $player = $_;
-
-    if ( $players{$player}{'chips'} eq 0 ) {
-      # Add player to dead player array
-      push @dead, "$player: $players{$player}{'won'}";
-
-      # Delete the player
-      delete $players{$player}{'chips'};
-      delete $players{$player}{'table'};
-      delete $players{$player}{'won'};
-      delete $players{$player};
-    }
-  }
-  @players = keys(%players);
   @players = sort(@players);
+
   if ( $tourney_running eq 0 ) { @stack = @players }
 
   # Create array which we can sort
@@ -452,11 +437,8 @@ sub loser {
       }
     }
 
-    # Delete player from tourney if chips are zero
-    if ( $players{$player}{'chips'} < 1 ) { 
-      push @dead, "$player: $players{$player}{'won'}";
-      delete $players{$player}; 
-    }
+    # Delete players from tourney if chips are zero
+    delete_players();
 
     # Assign table to new player if possible
     my @players_count = keys(%players);
@@ -534,6 +516,8 @@ sub start_tourney {
   # Count number of players
   my @number_of_players = keys(%players);
   my $number_of_players = @number_of_players;
+
+  # Reduce by half because two players per table.
   my $number_of_players = $number_of_players / 2;
 
   # If no tables added we can't start the tourney
@@ -560,25 +544,9 @@ sub start_tourney {
     $tourney_running = 1;
     my @players = keys(%players);
     @stack = shuffle(@players);
-    my @tables = keys(%tables);
 
     # Assign two players per table from the stack
-    foreach(@tables) {
-      my $table = $_;
-      my $player1 = shift(@stack);
-      push @stack, $player1;
-      my $player2 = shift(@stack);
-      push @stack, $player2;
-      $players{$player1}{'table'} = "$table";
-      $players{$player2}{'table'} = "$table";
-    }
-    @players = keys(%players);
-
-    # Set number of games won to zero for each player
-    foreach(@players) {
-      my $player = $_;
-      $players{$player}{'won'} = 0;
-    }
+    assign();
   }
 }
 
@@ -654,6 +622,8 @@ sub new_player {
     $players{$name}{'table'} = 'none';
     $players{$name}{'fargo'} = $fargo;
     $players{$name}{'won'} = 0;
+
+    # If tourney is already started, put new player at the top of the stack
     if ( $tourney_running eq 1 ) {
       unshift @stack, $name;
     }
@@ -798,10 +768,7 @@ sub take_chip {
       return;
     }
     $players{$player}{'chips'} = $players{$player}{'chips'} - 1;
-    if ( $players{$player}{'chips'} eq 0 ) {
-      push @dead, "$player: $players{$player}{'won'}";
-      delete $players{$player};
-    }
+    delete_players();
     return;
   } else {
     return
@@ -895,7 +862,7 @@ sub quit_program {
     if ( $^O =~ /MSWin32/ ) {
       system("start notepad.exe $desktop");
     }
-    if ( $^O =~ /next/ ) {
+    if ( $^O =~ /next|darwin/ ) {
       system("open $desktop");
     }
     exit;
@@ -949,18 +916,42 @@ sub shuffle_stack {
     }
 
     # Assign two players per table from the stack
-    my @tables = keys(%tables);
-    foreach(@tables) {
-      my $table = $_;
-      my $player1 = shift(@stack);
-      push @stack, $player1;
-      my $player2 = shift(@stack);
-      push @stack, $player2;
-      $players{$player1}{'table'} = "$table";
-      $players{$player2}{'table'} = "$table";
-    }
-    sleep 2;
+    assign();
+
+    sleep 1;
     print "Shuffled.\n";
     sleep 1;
+  }
+}
+
+sub delete_players {
+  my @players = keys(%players);
+  @players = sort(@players);
+  foreach(@players){
+    my $player = $_;
+
+    if ( $players{$player}{'chips'} eq 0 ) {
+      # Add player to dead player array
+      push @dead, "$player: $players{$player}{'won'}";
+
+      # Delete the player
+      delete $players{$player}{'chips'};
+      delete $players{$player}{'table'};
+      delete $players{$player}{'won'};
+      delete $players{$player};
+    }
+  }
+}
+
+sub assign {
+  my @tables = keys(%tables);
+  foreach(@tables) {
+    my $table = $_;
+    my $player1 = shift(@stack);
+    push @stack, $player1;
+    my $player2 = shift(@stack);
+    push @stack, $player2;
+    $players{$player1}{'table'} = "$table";
+    $players{$player2}{'table'} = "$table";
   }
 }
