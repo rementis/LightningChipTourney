@@ -19,19 +19,23 @@ $year = $year + 1900;
 my @abbr = qw(January February March April May June July August September October November December);
 
 # Set output file to user's Desktop
-my $desktop = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
+my $desktop     = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
+my $desktop_csv = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
+my $DATE = "$abbr[$mon]"."_$mday"."_$year";
 
 if ( $^O =~ /MSWin32/ ) {
   chomp(my $profile = `set userprofile`);
-  $profile =~ s/userprofile=//i;
-  $desktop = $profile . "\\desktop\\$desktop";
+  $profile     =~ s/userprofile=//i;
+  $desktop     = $profile . "\\desktop\\$desktop";
+  $desktop_csv = $profile . "\\desktop\\$desktop_csv";
 }
 
 # Hold state of screen in case we need to exit program
 my $screen_contents;
 
 # Set outfile for final results
-my $outfile = "$desktop";
+my $outfile     = "$desktop";
+my $outfile_csv = "$desktop_csv";
 
 # Open log file
 open OUTFILE, ">$outfile" or die "Cannot open results file: $!";
@@ -47,6 +51,7 @@ my $tourney_running = 0;   # Determine if tourney is currently started
 my @stack;                 # Array used to keep the players in order
 my @dead;                  # Hold list of players with zero chips
 my @whobeat;               # Record who beat who
+my @whobeat_csv;           # Record who beat who for spreadsheet
 print color($color);
 
 # Set the size of the console
@@ -74,10 +79,6 @@ if ( -e 'names.txt' ) {
     $players{$split[0]}{'won'} = 0;
   }
   $tables{'6'}=1;
-  $tables{'5'}=1;
-  $tables{'9'}=1;
-  $tables{'3'}=1;
-  $tables{'11'}=1;
 }
 
 # print Lightning Chip Logo
@@ -122,13 +123,31 @@ while(1) {
       # Print list of who beat who to log file
       @whobeat = sort(@whobeat);
       foreach(@whobeat) {
+	my $line = $_;
         print OUTFILE "$_";
       }
       close OUTFILE;
 
+      open OUTCSV, ">$outfile_csv";
+      print OUTCSV "Player #1,,,Player #2,\n";
+      print OUTCSV "Fargo ID,Player Name,Score,Fargo ID,Player Name,Score,Date,Game,Table,Event\n";
+      foreach(@whobeat_csv) {
+	my $line = $_;
+	my @split = split /:/, $line;
+	my $winner = $split[0];
+	my $loser  = $split[1];
+	my $table  = $split[2];
+	$winner =~ s/\(\d+\)//g;
+	$loser  =~ s/\(\d+\)//g;
+	print OUTCSV ",$winner,1,,$loser,0,$DATE,,$table\n";
+      }
+      close OUTCSV;
+
       # Open log file
       if ( $^O =~ /MSWin32/     ) { system("start notepad.exe $desktop") }
+      if ( $^O =~ /MSWin32/     ) { system("start $outfile_csv") }
       if ( $^O =~ /next|darwin/ ) { system("open $desktop") }
+      if ( $^O =~ /next|darwin/ ) { system("open $outfile_csv") }
       exit;
     }
   }
@@ -433,6 +452,7 @@ sub loser {
           my $printit = sprintf ( "%-30s %-10s %-30s\n", "$possible_opponent", 'beat', "$player" );
 	  $opponent = $possible_opponent;
 	  push @whobeat, $printit;
+	  push @whobeat_csv, "$possible_opponent:$player:$players{$possible_opponent}{'table'}";
         }	
       }
     }
