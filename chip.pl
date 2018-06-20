@@ -390,7 +390,7 @@ sub loser {
   my @players = keys(%players);
   @players = sort(@players);
   
-  print "\n\n\n\nPlease choose number of player who lost:\n";
+  print "\n\n\n\nPlease choose number of player who lost:\n\n";
   my @active_players;
   foreach(@players) {
     my $player = $_;
@@ -399,13 +399,18 @@ sub loser {
     }
   }
   my $num = 0;
+  my $list_color = 'bold white';
   foreach(@active_players) {
+    print color("$list_color");
     my $player = $_;
     $num++;
     if ( $players{$player}{'table'} ne 'none' ) {
+    if ( $list_color eq 'bold white'  ) { $list_color = 'bold cyan' } else { $list_color = 'bold white' }
+      print color("$list_color");
       print "$num: $player\n";
     }
   }
+  print color('bold white');
   print "\n";
   my $numselection = <STDIN>;
   chomp($numselection);
@@ -492,9 +497,11 @@ sub loser {
       $players{$opponent}{'table'} = 'none';
       clear_screen();
       print "\n\n\n\n\n\n\n\n";
+      print color('bold red');
       print "**************\n";
       print "*** NOTICE ***\n";
       print "**************\n\n";
+      print color('bold white');
       print "\n\n\nRemoving table $remove_table from tourney.  $opponent gets back in line.\n\nAny key to continue.\n";
       yesorno('any');
       delete $tables{$remove_table};
