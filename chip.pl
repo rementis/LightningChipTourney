@@ -7,10 +7,12 @@
 #     April/May 2018      #
 #                         #
 ###########################
+
 use strict;
 use Term::ReadKey;
 use List::Util 'shuffle';
 use Term::ANSIColor;
+print color('bold white');
 
 # Get current date
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
@@ -85,8 +87,8 @@ if ( -e 'names.txt' ) {
 print "\n\n\n\n\n";
 print " _     _       _     _         _                ____ _     _       \n";
 print "| |   (_) __ _| |__ | |_ _ __ (_)_ __   __ _   / ___| |__ (_)_ __  \n";
-print "| |   | |/ _` | '_ \\| __| '_ \\| | '_ \\ / _` | | |   | '_ \\| | '_ \ \n";
-print "| |___| | (_| | | | | |_| | | | | | | | (_| | | |___| | | | | |_) |\n";
+print "| |   | |/ _` | '_ \\| __| '_ \\| | '_ \\ / _` | | |   | '_ \\| | '_ \\ \n";
+print "| |___| | (_| | | | | |_| | | | | | | | (_| | | |___| | | | | |_)|\n";
 print "|_____|_|\\__, |_| |_|\\__|_| |_|_|_| |_|\\__, |  \\____|_| |_|_| .__/ \n";
 print "         |___/                         |___/                |_|    \n\n\n\n\n\n";
 print "                                           --by Martin Colello\n";
@@ -201,8 +203,11 @@ sub draw_screen {
 
   clear_screen();
   print color('bold yellow');
-  if ( $tourney_running eq 0 ) { print "\nLIGHTNING CHIP TOURNEY                                                     --by Martin Colello\n\n" }
-  if ( $tourney_running eq 1 ) { print "\nLIGHTNING CHIP TOURNEY            Players left: $number_of_players                         --by Martin Colello\n\n" }
+
+  if ( $tourney_running eq 0 ) { print colored("\nLIGHTNING CHIP TOURNEY                                                  --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
+
+  if ( $tourney_running eq 1 ) { print colored("\nLIGHTNING CHIP TOURNEY            Players left: $number_of_players                         --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
+
   print color('bold white');
   if ( $number_of_players > 0 ) {
     print "Player:                        Won:       Chips:     Table:\n\n";
