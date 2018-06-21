@@ -201,12 +201,11 @@ sub draw_screen {
   my @countplayers = keys(%players);
   $number_of_players = @countplayers;
 
-  clear_screen();
-  print color('bold yellow');
+  header();
 
-  if ( $tourney_running eq 0 ) { print colored("\nLIGHTNING CHIP TOURNEY                                                  --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
+#  if ( $tourney_running eq 0 ) { print colored("\nLIGHTNING CHIP TOURNEY                                                  --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
 
-  if ( $tourney_running eq 1 ) { print colored("\nLIGHTNING CHIP TOURNEY            Players left: $number_of_players                         --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
+#  if ( $tourney_running eq 1 ) { print colored("\nLIGHTNING CHIP TOURNEY            Players left: $number_of_players                         --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
 
   print color('bold white');
   if ( $number_of_players > 0 ) {
@@ -266,7 +265,7 @@ sub draw_screen {
     }
   }
 
-  # Print to screen in correct order
+  # Print to screen in correct TABLE order
   my $color  = 'bold white';
   foreach(@final_display) {
     my $line   = $_;
@@ -384,7 +383,7 @@ sub draw_screen {
 sub loser {
   # Actions to take when selecting a loser
 
-  clear_screen();
+  header();
   
   # Get list of players from hash, and sort them
   my @players = keys(%players);
@@ -495,7 +494,7 @@ sub loser {
     if ( $extra_players eq 'no' ) {
       my $remove_table = $players{$opponent}{'table'};
       $players{$opponent}{'table'} = 'none';
-      clear_screen();
+      header();
       print "\n\n\n\n\n\n\n\n";
       print color('bold red');
       print "**************\n";
@@ -508,38 +507,27 @@ sub loser {
     }
 
     if ( $extra_players eq 'yes' ) {
-      while (1) {
-        my $standup = shift(@stack);
-	my $standup2 = 'nothing';
 
-	# Skip to next in stack if player is same as standup :)
-	if ( $player eq $standup ) {
-          $standup2 = shift(@stack);
-	}
+      foreach(@stack) {
+        my $standup = $_;
 
-	if ( $standup2 eq 'nothing' ) {
-          push @stack, $standup;
-        } else {
-          push @stack, $standup2;
-          push @stack, $standup;
-	  $standup = $standup2;
-	}
+        if ( $player eq $standup ) { next }
 
         if ( exists( $players{$standup} ) and ( $players{$standup}{'table'} eq 'none' ) ) { 
           $players{$standup}{'table'} = $table;
-	  clear_screen();
-	  print "\n\n\n\n\n\n\nSend $standup to table $table\n\n<any key>\n";
-	  yesorno('any');
+          header();
+          print "\n\n\n\n\n\n\nSend $standup to table $table\n\n<any key>\n";
+          yesorno('any');
           last;
-        }   
+        }
       }
+    @stack=((grep $_ ne $player, @stack), $player);
     } 
-    return;
-  } 
+  }
 }
 
 sub start_tourney {
-  clear_screen();
+  header();
 
   # Count the number of tables
   my @counttables = keys(%tables);
@@ -583,7 +571,7 @@ sub start_tourney {
 }
 
 sub new_table {
-  clear_screen();
+  header();
   my @tables = keys(%tables);
   chomp(@tables);
   @tables = sort { $a <=> $b } @tables;
@@ -614,7 +602,7 @@ sub new_table {
 }
 
 sub new_player {
-  clear_screen();
+  header();
   print "Player Name:\n";
   print color('bold cyan');
   chomp(my $name = <STDIN>);
@@ -669,7 +657,7 @@ sub delete_player {
   my @players = keys(%players);
   @players = sort(@players);
 
-  clear_screen();
+  header();
   print "\nPlease choose number of player to delete:\n";
   my $num = 0;
   foreach(@players) {
@@ -718,7 +706,7 @@ sub give_chip {
   my @players = keys(%players);
   @players = sort(@players);
 
-  clear_screen();
+  header();
   print "\nPlease choose number of player to give chip:\n";
   my $num = 0;
   foreach(@players) {
@@ -762,7 +750,7 @@ sub take_chip {
   my @players = keys(%players);
   @players = sort(@players);
 
-  clear_screen();
+  header();
   print "\nPlease choose number of player to take chip:\n";
   my $num = 0;
   foreach(@players) {
@@ -812,7 +800,7 @@ sub delete_table {
   my @tables = keys(%tables);
   @tables = sort { $a <=> $b } (@tables);
 
-  clear_screen();
+  header();
   print "\nPlease choose number of table to delete:\n";
   my $num = 0;
   foreach(@tables) {
@@ -877,7 +865,7 @@ sub delete_table {
 }
 
 sub quit_program {
-  clear_screen();
+  header();
   print "\nQuitting will NOT save tourney data!!!\n";
   print "Are you sure?\n";
   my $yesorno = yesorno();
@@ -929,7 +917,7 @@ sub clear_screen {
 }
 
 sub shuffle_stack {
-  clear_screen();
+  header();
   print "\n\n\n\n\nThis will reshuffle ALL players including at current tables!!!\n";
   print "Are you sure?\n";
   my $yesorno = yesorno();
@@ -986,4 +974,16 @@ sub assign {
     $players{$player1}{'table'} = "$table";
     $players{$player2}{'table'} = "$table";
   }
+}
+
+sub header {
+	#clear_screen();
+  # Count the number of players still alive
+  my $number_of_players = 0;
+  my @countplayers = keys(%players);
+  $number_of_players = @countplayers;
+  if ( $tourney_running eq 0 ) { print colored("\nLIGHTNING CHIP TOURNEY                                                  --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
+
+  if ( $tourney_running eq 1 ) { print colored("\nLIGHTNING CHIP TOURNEY            Players left: $number_of_players                         --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
+  print color('bold white');
 }
