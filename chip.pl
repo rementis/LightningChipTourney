@@ -575,10 +575,10 @@ sub new_table {
   my @tables = keys(%tables);
   chomp(@tables);
   @tables = sort { $a <=> $b } @tables;
+
   print "Current tables:\n";
-  foreach(@tables) {
-    print "$_\n";
-  }
+  foreach(@tables) { print "$_\n" }
+
   print "\n\nTable Number:\n";
   print color('bold cyan');
   chomp(my $name = <STDIN>);
@@ -588,13 +588,25 @@ sub new_table {
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
     $tables{$name} = 1;
+    # Sort through stack and grab player that has table set to none
+    # Then put them back on bottom of stack
     if ( $tourney_running eq 1 ) {
-      my $standup1 = shift(@stack);
-      push @stack, $standup1;
-      my $standup2 = shift(@stack);
-      push @stack, $standup2;
-      $players{$standup1}{'table'} = $name;
-      $players{$standup2}{'table'} = $name;
+      foreach (@stack) {
+        my $standup = $_;
+	if ($players{$standup}{'table'} eq 'none') {
+          $players{$standup}{'table'} = $name;
+          @stack=((grep $_ ne $standup, @stack), $standup);
+	  last;
+	}
+      }
+      foreach (@stack) {
+        my $standup = $_;
+	if ($players{$standup}{'table'} eq 'none') {
+          $players{$standup}{'table'} = $name;
+          @stack=((grep $_ ne $standup, @stack), $standup);
+	  last;
+	}
+      }
     }
   } else {
     return
@@ -843,20 +855,10 @@ sub delete_table {
       my $player = $_;
       if ( $players{$player}{'table'} eq $table ) {
         $players{$player}{'table'} = 'none';
-        my $i = 0;
-        foreach(@stack) {
-          $name = $_;
-	  $i++;
-	  if ( $name eq $player ) {
-            $i--;
-	    $tempsplice = splice (@stack, $i, 1);
-	    push @tempsplice, $tempsplice;
-	  }
-        }
+        @stack=((grep $_ ne $player, @stack), $player);
+        my $tempplayer = pop @stack;
+        unshift @stack, $tempplayer;
       }
-    }
-    foreach(@tempsplice) {
-      unshift @stack, $_;
     }
     return;
   } else {
@@ -977,7 +979,7 @@ sub assign {
 }
 
 sub header {
-	#clear_screen();
+  clear_screen();
   # Count the number of players still alive
   my $number_of_players = 0;
   my @countplayers = keys(%players);
