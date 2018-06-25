@@ -4,7 +4,7 @@
 #                         #
 # Lightening Chip Tourney #
 #     Martin Colello      #
-#     April/May 2018      #
+#   April/May/June 2018   #
 #                         #
 ###########################
 
@@ -172,6 +172,7 @@ while(1) {
       if ( $tourney_running eq 1 ) {
         $done = 1 if $choice eq 'L';
         $done = 1 if $choice eq 'S';
+        $done = 1 if $choice eq 'RE';
       }
       if ( $tourney_running eq 0 ) {
         $done = 1 if $choice eq 'B';
@@ -181,16 +182,16 @@ while(1) {
   ReadMode 0;
 
   # Call subroutines based on menu selection
-  if ( $choice eq 'Q' ) { quit_program()  }
-  if ( $choice eq 'N' ) { new_player()    }
-  if ( $choice eq 'D' ) { delete_player() }
-  if ( $choice eq 'A' ) { new_table()     }
-  if ( $choice eq 'R' ) { delete_table()  }
-  if ( $choice eq 'B' ) { start_tourney() }
-  if ( $choice eq 'G' ) { give_chip()     }
-  if ( $choice eq 'T' ) { take_chip()     }
-  if ( $choice eq 'L' ) { loser()         }
-  if ( $choice eq 'S' ) { shuffle_stack() }
+  if ( $choice eq 'Q'  ) { quit_program()  }
+  if ( $choice eq 'N'  ) { new_player()    }
+  if ( $choice eq 'D'  ) { delete_player() }
+  if ( $choice eq 'A'  ) { new_table()     }
+  if ( $choice eq 'R'  ) { delete_table()  }
+  if ( $choice eq 'B'  ) { start_tourney() }
+  if ( $choice eq 'G'  ) { give_chip()     }
+  if ( $choice eq 'T'  ) { take_chip()     }
+  if ( $choice eq 'L'  ) { loser()         }
+  if ( $choice eq 'S'  ) { shuffle_stack() }
 }# End of MAIN LOOP
 
 sub draw_screen {
@@ -376,7 +377,7 @@ sub draw_screen {
     print color('bold yellow');
     print "q";
     print color('bold white');
-    print ")uit program \n";
+    print ")uit\n";
   }
 }
 
@@ -576,9 +577,18 @@ sub new_table {
   chomp(@tables);
   @tables = sort { $a <=> $b } @tables;
 
+  $color = 'bold white';
+  print color($color);
   print "Current tables:\n";
-  foreach(@tables) { print "$_\n" }
 
+  foreach(@tables) { 
+    if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
+    print color($color);
+    print "$_\n";
+  }
+
+  $color = 'bold white';
+  print color($color);
   print "\n\nTable Number:\n";
   print color('bold cyan');
   chomp(my $name = <STDIN>);
@@ -670,14 +680,20 @@ sub delete_player {
   @players = sort(@players);
 
   header();
-  print "\nPlease choose number of player to delete:\n";
+  $color = 'bold white';
+  print color($color);
+  print "\nPlease choose number of player to delete:\n\n";
   my $num = 0;
   foreach(@players) {
     my $player = $_;
     $num++;
+    if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
+    print color($color);
     print "$num: $player\n";
   }
   print "\n";
+  $color = 'bold white';
+  print color($color);
   my $numselection = <STDIN>;
   chomp($numselection);
   if ( $numselection !~ /\d/) {
@@ -718,16 +734,22 @@ sub give_chip {
   my @players = keys(%players);
   @players = sort(@players);
 
+  $color = 'bold white';
+  print color($color);
   header();
-  print "\nPlease choose number of player to give chip:\n";
+  print "\nPlease choose number of player to give chip:\n\n";
   my $num = 0;
   foreach(@players) {
     my $player = $_;
     $num++;
+    if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
+    print color($color);
     print "$num: $player\n";
   }
   print "\n";
   my $numselection = <STDIN>;
+  $color = 'bold white';
+  print color($color);
   chomp($numselection);
   if ( $numselection !~ /\d/) {
     print "Needed to enter a number, exiting...\n";
@@ -763,15 +785,21 @@ sub take_chip {
   @players = sort(@players);
 
   header();
-  print "\nPlease choose number of player to take chip:\n";
+  $color = 'bold white';
+  print color($color);
+  print "\nPlease choose number of player to take chip:\n\n";
   my $num = 0;
   foreach(@players) {
     my $player = $_;
     $num++;
+    if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
+    print color($color);
     print "$num: $player\n";
   }
   print "\n";
   my $numselection = <STDIN>;
+  $color = 'bold white';
+  print color($color);
   chomp($numselection);
   if ( $numselection !~ /\d/) {
     print "Needed to enter a number, exiting...\n";
@@ -813,11 +841,13 @@ sub delete_table {
   @tables = sort { $a <=> $b } (@tables);
 
   header();
-  print "\nPlease choose number of table to delete:\n";
+  print "\nPlease choose number of table to delete:\n\n";
   my $num = 0;
   foreach(@tables) {
     my $table = $_;
     $num++;
+    if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
+    print color($color);
     print "$num: $table\n";
   }
   print "\n";
@@ -840,17 +870,16 @@ sub delete_table {
   my $table = $tables[$numselection];
   chomp($table);
 
-  my @tempsplice;
   print "Delete table $table, correct?\n";
   my $yesorno = yesorno();
   chomp($yesorno);
-  my $tempsplice;
 
   # If deleting a table in use move players to top of stack
   if ( $yesorno eq 'y' ) {
     delete $tables{$table};
     my @players = keys(%players);
-    my $name;
+    # Reverse sort players so that they are added back into stack in alphabetical order.
+    @players = reverse sort(@players);
     foreach (@players) {
       my $player = $_;
       if ( $players{$player}{'table'} eq $table ) {
@@ -989,3 +1018,4 @@ sub header {
   if ( $tourney_running eq 1 ) { print colored("\nLIGHTNING CHIP TOURNEY            Players left: $number_of_players                         --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
   print color('bold white');
 }
+
