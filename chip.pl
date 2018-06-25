@@ -204,10 +204,6 @@ sub draw_screen {
 
   header();
 
-#  if ( $tourney_running eq 0 ) { print colored("\nLIGHTNING CHIP TOURNEY                                                  --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
-
-#  if ( $tourney_running eq 1 ) { print colored("\nLIGHTNING CHIP TOURNEY            Players left: $number_of_players                         --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
-
   print color('bold white');
   if ( $number_of_players > 0 ) {
     print "Player:                        Won:       Chips:     Table:\n\n";
@@ -296,8 +292,14 @@ sub draw_screen {
     my $color  = 'bold white';
     print color($color);
 
-    if ( $number_of_players < 1 ) {
-      print "Tournament is empty.\n\nPlease add at least one table and some players.\n\n";
+    # Display begin tourney message based on number of tables/players added so far
+    my @count_the_tables = keys(%tables);
+    my $count_the_tables = @count_the_tables;
+    if (( $number_of_players < 1 ) and ( $count_the_tables < 1 )) {
+      print "Welcome to Lightning Chip Tourney!\n\nTournament is empty.\n\nPlease add at least one table and some players.\n\n";
+    }
+    if (( $number_of_players < 1 ) and ( $count_the_tables > 0 )) {
+      print "Welcome to Lightning Chip Tourney!\n\nTournament is empty.\n\nPlease add some players.\n\n";
     }
 
   # Print menu
@@ -398,36 +400,11 @@ sub loser {
       push @active_players, $player;
     }
   }
-  my $num = 0;
-  my $list_color = 'bold white';
-  foreach(@active_players) {
-    print color("$list_color");
-    my $player = $_;
-    $num++;
-    if ( $players{$player}{'table'} ne 'none' ) {
-    if ( $list_color eq 'bold white'  ) { $list_color = 'bold cyan' } else { $list_color = 'bold white' }
-      print color("$list_color");
-      print "$num: $player\n";
-    }
-  }
-  print color('bold white');
-  print "\n";
-  my $numselection = <STDIN>;
-  chomp($numselection);
-  if ( $numselection !~ /\d/) {
-    print "Needed to enter a number, exiting...\n";
-    sleep 1;
+
+  my $numselection = print_menu_array(@active_players);  
+  if ( $numselection == 1000 ) {
     return;
   }
-
-  if ( ($numselection > $num) or ($numselection == 0) ) {
-    print "Invalid selection, exiting...\n";
-    sleep 1;
-    return;
-  }
-
-  $numselection--;
-  
   my $player = $active_players[$numselection];
   chomp($player);
 
@@ -550,6 +527,7 @@ sub start_tourney {
 
   if ( $number_of_players <= $counttables ) {
     print "Too many tables are configured to start tourney.\n\n";
+    print "Please remove a table.\n\n";
     sleep 5;
     return;
   }
@@ -580,12 +558,7 @@ sub new_table {
   $color = 'bold white';
   print color($color);
   print "Current tables:\n";
-
-  foreach(@tables) { 
-    if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
-    print color($color);
-    print "$_\n";
-  }
+  print_array(@tables);
 
   $color = 'bold white';
   print color($color);
@@ -597,8 +570,13 @@ sub new_table {
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
+    if ( exists $tables{$name} ) {
+      print "Table $name already exists.\n";
+      sleep 3;
+      return;
+    }
     $tables{$name} = 1;
-    # Sort through stack and grab player that has table set to none
+    # Sort through stack and grab two players that have table set to none
     # Then put them back on bottom of stack
     if ( $tourney_running eq 1 ) {
       foreach (@stack) {
@@ -656,6 +634,11 @@ sub new_player {
     sleep 3;
     return;
   }
+  if ( $chips < 1 ) {
+    print "Chips must be more than zero.\n";
+    sleep 3;
+    return;
+  }
   print "$name with $chips chips, correct?\n";
   my $yesorno = yesorno();
   chomp($yesorno);
@@ -683,45 +666,26 @@ sub delete_player {
   $color = 'bold white';
   print color($color);
   print "\nPlease choose number of player to delete:\n\n";
-  my $num = 0;
-  foreach(@players) {
-    my $player = $_;
-    $num++;
-    if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
-    print color($color);
-    print "$num: $player\n";
-  }
-  print "\n";
-  $color = 'bold white';
-  print color($color);
-  my $numselection = <STDIN>;
-  chomp($numselection);
-  if ( $numselection !~ /\d/) {
-    print "Needed to enter a number, exiting...\n";
-    sleep 1;
+  my $numselection = print_menu_array(@players);
+
+  if ( $numselection == 1000 ) {
     return;
   }
-
-  if ( ($numselection > $num) or ($numselection == 0) ) {
-    print "Invalid selection, exiting...\n";
-    sleep 1;
-    return;
-  }
-
-  $numselection--;
   
   my $player = $players[$numselection];
   chomp($player);
+
+  if ( $players{$player}{'table'} ne 'none' ) { 
+    print "Cannot delete player who is at a table.\n";
+    sleep 3;
+    return;
+  }  
 
   print "THIS WILL REMOVE PLAYER FROM TOURNEY\n";
   print "Delete $player, correct?\n";
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
-    if ( $players{$player}{'table'} ne 'none' ) { 
-      print "Cannot delete player who is at a table.\n";
-      sleep 5;
-    }  
     delete $players{$player};
     return;
   } else {
@@ -738,32 +702,11 @@ sub give_chip {
   print color($color);
   header();
   print "\nPlease choose number of player to give chip:\n\n";
-  my $num = 0;
-  foreach(@players) {
-    my $player = $_;
-    $num++;
-    if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
-    print color($color);
-    print "$num: $player\n";
-  }
-  print "\n";
-  my $numselection = <STDIN>;
-  $color = 'bold white';
-  print color($color);
-  chomp($numselection);
-  if ( $numselection !~ /\d/) {
-    print "Needed to enter a number, exiting...\n";
-    sleep 1;
+  my $numselection = print_menu_array(@players);
+
+  if ( $numselection == 1000 ) {
     return;
   }
-
-  if ( ($numselection > $num) or ($numselection == 0) ) {
-    print "Invalid selection, exiting...\n";
-    sleep 1;
-    return;
-  }
-
-  $numselection--;
   
   my $player = $players[$numselection];
   chomp($player);
@@ -788,45 +731,24 @@ sub take_chip {
   $color = 'bold white';
   print color($color);
   print "\nPlease choose number of player to take chip:\n\n";
-  my $num = 0;
-  foreach(@players) {
-    my $player = $_;
-    $num++;
-    if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
-    print color($color);
-    print "$num: $player\n";
-  }
-  print "\n";
-  my $numselection = <STDIN>;
-  $color = 'bold white';
-  print color($color);
-  chomp($numselection);
-  if ( $numselection !~ /\d/) {
-    print "Needed to enter a number, exiting...\n";
-    sleep 1;
+  my $numselection = print_menu_array(@players);
+
+  if ( $numselection == 1000 ) {
     return;
   }
-
-  if ( ($numselection > $num) or ($numselection == 0) ) {
-    print "Invalid selection, exiting...\n";
-    sleep 1;
-    return;
-  }
-
-  $numselection--;
   
   my $player = $players[$numselection];
   chomp($player);
+  if ( $players{$player}{'table'} ne 'none' ) {
+    print "Cannot take chip from player who is at table.\n";
+    sleep 3;
+    return;
+  }
 
   print "Take chip from $player, correct?\n";
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
-    if ( $players{$player}{'table'} ne 'none' ) {
-      print "Cannot take chip from player who is at table.\n";
-      sleep 3;
-      return;
-    }
     $players{$player}{'chips'} = $players{$player}{'chips'} - 1;
     delete_players();
     return;
@@ -842,30 +764,11 @@ sub delete_table {
 
   header();
   print "\nPlease choose number of table to delete:\n\n";
-  my $num = 0;
-  foreach(@tables) {
-    my $table = $_;
-    $num++;
-    if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
-    print color($color);
-    print "$num: $table\n";
-  }
-  print "\n";
-  my $numselection = <STDIN>;
-  chomp($numselection);
-  if ( $numselection !~ /\d/) {
-    print "Needed to enter a number, exiting...\n";
-    sleep 1;
+  my $numselection = print_menu_array(@tables);
+
+  if ( $numselection == 1000 ) {
     return;
   }
-
-  if ( ($numselection > $num) or ($numselection == 0) ) {
-    print "Invalid selection, exiting...\n";
-    sleep 1;
-    return;
-  }
-
-  $numselection--;
   
   my $table = $tables[$numselection];
   chomp($table);
@@ -1013,9 +916,62 @@ sub header {
   my $number_of_players = 0;
   my @countplayers = keys(%players);
   $number_of_players = @countplayers;
-  if ( $tourney_running eq 0 ) { print colored("\nLIGHTNING CHIP TOURNEY                                                  --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
 
-  if ( $tourney_running eq 1 ) { print colored("\nLIGHTNING CHIP TOURNEY            Players left: $number_of_players                         --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
+  my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+  my $ampm = 'AM';
+  if ( $hour > 12 ) { 
+    $hour = $hour - 12;
+    $ampm = 'PM';
+  }
+  my $TIME = "$hour".':'."$min "."$ampm";
+
+  if ( $tourney_running eq 0 ) { print colored("\nLIGHTNING CHIP TOURNEY                               $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
+
+  if ( $tourney_running eq 1 ) { print colored("\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
   print color('bold white');
 }
+
+sub print_array {
+  my @array = @_;
+  $color = 'bold white';
+  print color($color);
+
+  foreach(@array) {
+    print "$_\n";
+    if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
+    print color($color);
+  }
+}
+
+sub print_menu_array {
+  my @array = @_;
+  my $num = 0;
+  foreach(@array) {
+    my $choice = $_;
+    $num++;
+    if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
+    print color($color);
+    print "$num: $choice\n";
+  }
+  print "\n";
+  $color = 'bold white';
+  print color($color);
+  my $numselection = <STDIN>;
+  chomp($numselection);
+  if ( $numselection !~ /\d/) {
+    print "Needed to enter a number, exiting...\n";
+    sleep 1;
+    return 1000;
+  }
+
+  if ( ($numselection > $num) or ($numselection == 0) ) {
+    print "Invalid selection, exiting...\n";
+    sleep 1;
+    return 1000;
+  }
+
+  $numselection--;
+  return $numselection;
+}
+
 
