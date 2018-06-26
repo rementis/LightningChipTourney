@@ -12,7 +12,6 @@ use strict;
 use Term::ReadKey;
 use List::Util 'shuffle';
 use Term::ANSIColor;
-print color('bold white');
 
 # Get current date
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
@@ -54,7 +53,9 @@ my @stack;                 # Array used to keep the players in order
 my @dead;                  # Hold list of players with zero chips
 my @whobeat;               # Record who beat who
 my @whobeat_csv;           # Record who beat who for spreadsheet
-print color($color);
+my $Colors = 'on';         # Keep track if user wants color display turned off
+#my $Colors = 'off';       # Keep track if user wants color display turned off
+print color($color) unless ( $Colors eq 'off');
 
 # Set the size of the console
 if ( $^O =~ /MSWin32/ ) {
@@ -169,6 +170,7 @@ while(1) {
       $done = 1 if $choice eq 'G';
       $done = 1 if $choice eq 'R';
       $done = 1 if $choice eq 'T';
+      $done = 1 if $choice eq 'C';
       if ( $tourney_running eq 1 ) {
         $done = 1 if $choice eq 'L';
         $done = 1 if $choice eq 'S';
@@ -192,6 +194,8 @@ while(1) {
   if ( $choice eq 'T'  ) { take_chip()     }
   if ( $choice eq 'L'  ) { loser()         }
   if ( $choice eq 'S'  ) { shuffle_stack() }
+  if ( $choice eq 'C'  ) { switch_colors() }
+
 }# End of MAIN LOOP
 
 sub draw_screen {
@@ -204,7 +208,7 @@ sub draw_screen {
 
   header();
 
-  print color('bold white');
+  print color('bold white') unless ( $Colors eq 'off');;
   if ( $number_of_players > 0 ) {
     print "Player:                        Won:       Chips:     Table:\n\n";
   }
@@ -266,13 +270,13 @@ sub draw_screen {
   my $color  = 'bold white';
   foreach(@final_display) {
     my $line   = $_;
-    print color($color);
+    print color($color) unless ( $Colors eq 'off');;
     if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
     print "$line";
     $screen_contents .= $line;
   }
   $color  = 'bold white';
-  print color($color);
+  print color($color) unless ( $Colors eq 'off');;
 
   print "\n";
   @dead = sort(@dead);
@@ -284,13 +288,13 @@ sub draw_screen {
     my $deadname = $split[0];
     my $deadwon  = $split[1];
     my $color  = 'bold red';
-    print color($color);
+    print color($color) unless ( $Colors eq 'off');;
     my $printit = sprintf ( "%-29s %-10s\n", "$deadname", "$deadwon" );
     print "$printit";
     $screen_contents .= $printit;
   }
     my $color  = 'bold white';
-    print color($color);
+    print color($color) unless ( $Colors eq 'off');;
 
     # Display begin tourney message based on number of tables/players added so far
     my @count_the_tables = keys(%tables);
@@ -307,78 +311,82 @@ sub draw_screen {
   if ( $tourney_running eq 0 ) {
     #print "(n)ew player (d)elete player (a)dd table (r)emove table (g)ive chip (t)ake chip (q)uit program (b)egin tourney!\n";
     print "(";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "n";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")ew player (";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "d";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")elete player (";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "a";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")dd table (";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "r";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")emove table (";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "g";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")ive chip (";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "t";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")ake chip (";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "q";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")uit program (";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
+    print "c";
+    print color('bold white') unless ( $Colors eq 'off');
+    print ")olors (";
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "b";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")egin tourney!\n";
   }
   # Print menu
   if ( $tourney_running eq 1 ) {
     #print "(l)oser (n)ew player (d)elete player (r)emove table (a)dd table (g)ive chip (t)ake chip (q)uit program\n";
     print "(";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "l";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")oser (";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "n";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")ew player (";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "d";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")elete player (";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "a";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")dd table (";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "r";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")emove table (";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "g";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")ive chip (";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "t";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")ake chip (";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "s";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")huffle (";
-    print color('bold yellow');
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "q";
-    print color('bold white');
+    print color('bold white') unless ( $Colors eq 'off');
     print ")uit\n";
   }
 }
@@ -474,11 +482,11 @@ sub loser {
       $players{$opponent}{'table'} = 'none';
       header();
       print "\n\n\n\n\n\n\n\n";
-      print color('bold red');
+      print color('bold red') unless ( $Colors eq 'off');
       print "**************\n";
       print "*** NOTICE ***\n";
       print "**************\n\n";
-      print color('bold white');
+      print color('bold white') unless ( $Colors eq 'off');
       print "\n\n\nRemoving table $remove_table from tourney.  $opponent gets back in line.\n\nAny key to continue.\n";
       yesorno('any');
       delete $tables{$remove_table};
@@ -556,16 +564,16 @@ sub new_table {
   @tables = sort { $a <=> $b } @tables;
 
   $color = 'bold white';
-  print color($color);
+  print color($color) unless ( $Colors eq 'off');
   print "Current tables:\n";
   print_array(@tables);
 
   $color = 'bold white';
-  print color($color);
+  print color($color) unless ( $Colors eq 'off');
   print "\n\nTable Number:\n";
-  print color('bold cyan');
+  print color('bold cyan') unless ( $Colors eq 'off');
   chomp(my $name = <STDIN>);
-  print color('bold white');
+  print color('bold white') unless ( $Colors eq 'off');
   print "Add Table Number $name, correct?\n";
   my $yesorno = yesorno();
   chomp($yesorno);
@@ -604,14 +612,14 @@ sub new_table {
 sub new_player {
   header();
   print "Player Name:\n";
-  print color('bold cyan');
+  print color('bold cyan') unless ( $Colors eq 'off');
   chomp(my $name = <STDIN>);
-  print color('bold white');
+  print color('bold white') unless ( $Colors eq 'off');
 
   print "Fargo Rating:\n";
-  print color('bold cyan');
+  print color('bold cyan') unless ( $Colors eq 'off');
   chomp(my $fargo = <STDIN>);
-  print color('bold white');
+  print color('bold white') unless ( $Colors eq 'off');
   if ( $fargo !~ /^\d+\z/ ) {
     print "Fargo rating must be a number.\n";
     sleep 3;
@@ -626,9 +634,9 @@ sub new_player {
   }
 
   print "Number of chips:\n";
-  print color('bold cyan');
+  print color('bold cyan') unless ( $Colors eq 'off');
   chomp(my $chips = <STDIN>);
-  print color('bold white');
+  print color('bold white') unless ( $Colors eq 'off');
   if ( $chips !~ /^\d+\z/ ) {
     print "Chips must be a number.\n";
     sleep 3;
@@ -664,7 +672,7 @@ sub delete_player {
 
   header();
   $color = 'bold white';
-  print color($color);
+  print color($color) unless ( $Colors eq 'off');
   print "\nPlease choose number of player to delete:\n\n";
   my $numselection = print_menu_array(@players);
 
@@ -699,7 +707,7 @@ sub give_chip {
   @players = sort(@players);
 
   $color = 'bold white';
-  print color($color);
+  print color($color) unless ( $Colors eq 'off');
   header();
   print "\nPlease choose number of player to give chip:\n\n";
   my $numselection = print_menu_array(@players);
@@ -729,7 +737,7 @@ sub take_chip {
 
   header();
   $color = 'bold white';
-  print color($color);
+  print color($color) unless ( $Colors eq 'off');
   print "\nPlease choose number of player to take chip:\n\n";
   my $numselection = print_menu_array(@players);
 
@@ -925,21 +933,27 @@ sub header {
   }
   my $TIME = "$hour".':'."$min "."$ampm";
 
-  if ( $tourney_running eq 0 ) { print colored("\nLIGHTNING CHIP TOURNEY                               $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
+  if ( ( $tourney_running eq 0 ) and ( $Colors eq 'on' ) ) { print colored("\nLIGHTNING CHIP TOURNEY                               $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
 
-  if ( $tourney_running eq 1 ) { print colored("\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
-  print color('bold white');
+  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on' ) ) { print colored("\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
+
+  if ( ( $tourney_running eq 0 ) and ( $Colors eq 'off' ) ) { print "\nLIGHTNING CHIP TOURNEY                               $TIME              --by Martin Colello\n\n\n" }
+
+  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) ) { print "\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello\n\n\n" }
+
+
+  print color('bold white') unless ( $Colors eq 'off');
 }
 
 sub print_array {
   my @array = @_;
   $color = 'bold white';
-  print color($color);
+  print color($color) unless ( $Colors eq 'off');
 
   foreach(@array) {
     print "$_\n";
     if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
-    print color($color);
+    print color($color) unless ( $Colors eq 'off');
   }
 }
 
@@ -950,12 +964,12 @@ sub print_menu_array {
     my $choice = $_;
     $num++;
     if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
-    print color($color);
+    print color($color) unless ( $Colors eq 'off');
     print "$num: $choice\n";
   }
   print "\n";
   $color = 'bold white';
-  print color($color);
+  print color($color) unless ( $Colors eq 'off');
   my $numselection = <STDIN>;
   chomp($numselection);
   if ( $numselection !~ /\d/) {
@@ -973,5 +987,23 @@ sub print_menu_array {
   $numselection--;
   return $numselection;
 }
+
+sub switch_colors {
+  if ( $Colors eq 'on' ) { 
+    $Colors = 'off';
+  } elsif ( $Colors eq 'off' ) {
+    $Colors = 'on';
+  }
+  return;
+}
+
+
+
+
+
+
+
+
+
 
 
