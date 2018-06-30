@@ -24,12 +24,16 @@ my @abbr = qw(January February March April May June July August September Octobe
 my $desktop     = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
 my $desktop_csv = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
 my $DATE = "$abbr[$mon]"."_$mday"."_$year";
+my $windows_ver = 'none';
 
 if ( $^O =~ /MSWin32/ ) {
   chomp(my $profile = `set userprofile`);
   $profile     =~ s/userprofile=//i;
   $desktop     = $profile . "\\desktop\\$desktop";
   $desktop_csv = $profile . "\\desktop\\$desktop_csv";
+  $windows_ver = `ver`;
+  #print "ver is $windows_ver\n";
+  #sleep 5;
 }
 
 # Hold state of screen in case we need to exit program
@@ -59,6 +63,11 @@ my $most_recent_loser = 'none';  # Keep track of who lost recently for stack man
 my $most_recent_winner = 'none'; # Keep track of who lost recently for stack manipulation
 my $game = 'none';               # Store game type (8/9/10 ball)
 my $event;                       # Store Event name (Freezer's Chip etc)
+if ( $windows_ver =~ /Version 10/  ) {
+  $Colors = 'on';
+} else {
+  $Colors = 'off';
+}
 
 print color($color) unless ( $Colors eq 'off');
 
@@ -393,6 +402,10 @@ sub draw_screen {
     print color('bold white') unless ( $Colors eq 'off');
     print ")ake chip (";
     print color('bold yellow') unless ( $Colors eq 'off');
+    print "c";
+    print color('bold white') unless ( $Colors eq 'off');
+    print ")olors (";
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "s";
     print color('bold white') unless ( $Colors eq 'off');
     print ")huffle (";
@@ -543,7 +556,7 @@ sub loser {
     } 
     if ( $number_of_players < 7 ) {
       $players{$opponent}{'table'} = 'none';
-      print "\n\nPlease Shuffle after each match is completed.\n\n<any key>\n";
+      print "\n\nPlease Shuffle after all matches are completed.\n\n<any key>\n";
       yesorno('any');
     }
   }
@@ -1086,12 +1099,12 @@ sub switch_colors {
 sub game_and_event {
   header();
   print "Please enter Event Name:\n";
-  print "\nExample: Freezer's Lightning Nine Ball Chip Tourney\n";
+  print "\nExample: Freezer's Lightning Nine Ball Chip Tourney\n\n";
   print color('bold cyan') unless ( $Colors eq 'off');
   chomp($event = <STDIN>);
   print color('bold white') unless ( $Colors eq 'off');
   print "\n\nPlease enter game type:\n";
-  print "\nExample: Nine Ball\n";
+  print "\nExample: Nine Ball\n\n";
   print color('bold cyan') unless ( $Colors eq 'off');
   chomp($game = <STDIN>);
   print color('bold white') unless ( $Colors eq 'off');
