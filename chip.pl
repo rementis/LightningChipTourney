@@ -45,19 +45,21 @@ print OUTFILE "$abbr[$mon]".' '."$mday".' '."$year"."\n";
 print OUTFILE "Lightning Chip Tourney results:                      --by Martin Colello\n\n";
 
 # Setup some global hashes and variables
-my $color  = 'bold white';      # Default text color to start with
-my $key;                        # Generic holder for hash keys
-my %players;                    # Hash which contains tourney players
-my %tables;                     # Hash which contains billiard tables in use
-my $tourney_running = 0;        # Determine if tourney is currently started
-my @stack;                      # Array used to keep the players in order
-my @dead;                       # Hold list of players with zero chips
-my @whobeat;                    # Record who beat who
-my @whobeat_csv;                # Record who beat who for spreadsheet
-my $Colors = 'on';              # Keep track if user wants color display turned off
-my $most_recent_loser = 'none'; # Keep track of who lost recently for stack manipulation
+my $color  = 'bold white';       # Default text color to start with
+my $key;                         # Generic holder for hash keys
+my %players;                     # Hash which contains tourney players
+my %tables;                      # Hash which contains billiard tables in use
+my $tourney_running = 0;         # Determine if tourney is currently started
+my @stack;                       # Array used to keep the players in order
+my @dead;                        # Hold list of players with zero chips
+my @whobeat;                     # Record who beat who
+my @whobeat_csv;                 # Record who beat who for spreadsheet
+my $Colors = 'on';               # Keep track if user wants color display turned off
+my $most_recent_loser = 'none';  # Keep track of who lost recently for stack manipulation
 my $most_recent_winner = 'none'; # Keep track of who lost recently for stack manipulation
-#my $Colors = 'off';            # Keep track if user wants color display turned off
+my $game = 'none';               # Store game type (8/9/10 ball)
+my $event;                       # Store Event name (Freezer's Chip etc)
+
 print color($color) unless ( $Colors eq 'off');
 
 # Set the size of the console
@@ -100,6 +102,8 @@ print "         |___/                         |___/                |_|    \n\n\n
 print "                                           --by Martin Colello\n";
 yesorno('any');
 
+game_and_event();
+
 # MAIN LOOP of program
 while(1) {
 
@@ -123,7 +127,8 @@ while(1) {
     }
   }
   if ( $tourney_running eq 1 ) {
-    if (( $number_of_players < 2 ) or ( $tables_in_use eq 0 )){
+    #if (( $number_of_players < 2 ) or ( $tables_in_use eq 0 )){
+    if ( $number_of_players < 2 ){
       draw_screen();
       print "\nEnd of tourney.\n";
       print OUTFILE "$screen_contents\n\n";
@@ -149,7 +154,7 @@ while(1) {
 	my $loser_id  = $split[4];
 	$winner =~ s/\(\d+\)//g;
 	$loser  =~ s/\(\d+\)//g;
-	print OUTCSV "$winner_id,$winner,1,$loser_id,$loser,0,$DATE,,$table\n";
+	print OUTCSV "$winner_id,$winner,1,$loser_id,$loser,0,$DATE,$game,$table,$event\n";
       }
       close OUTCSV;
 
@@ -536,6 +541,11 @@ sub loser {
       }
     @stack=((grep $_ ne $player, @stack), $player);
     } 
+    if ( $number_of_players < 7 ) {
+      $players{$opponent}{'table'} = 'none';
+      print "\n\nPlease Shuffle after each match is completed.\n\n<any key>\n";
+      yesorno('any');
+    }
   }
 }
 
@@ -1073,7 +1083,21 @@ sub switch_colors {
   return;
 }
 
-
+sub game_and_event {
+  header();
+  print "Please enter Event Name:\n";
+  print "\nExample: Freezer's Lightning Nine Ball Chip Tourney\n";
+  print color('bold cyan') unless ( $Colors eq 'off');
+  chomp($event = <STDIN>);
+  print color('bold white') unless ( $Colors eq 'off');
+  print "\n\nPlease enter game type:\n";
+  print "\nExample: Nine Ball\n";
+  print color('bold cyan') unless ( $Colors eq 'off');
+  chomp($game = <STDIN>);
+  print color('bold white') unless ( $Colors eq 'off');
+  chomp($event);
+  chomp($game);
+}
 
 
 
