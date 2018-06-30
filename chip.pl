@@ -12,6 +12,7 @@ use strict;
 use Term::ReadKey;
 use List::Util 'shuffle';
 use Term::ANSIColor;
+use POSIX;
 
 # Get current date
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
@@ -44,17 +45,19 @@ print OUTFILE "$abbr[$mon]".' '."$mday".' '."$year"."\n";
 print OUTFILE "Lightning Chip Tourney results:                      --by Martin Colello\n\n";
 
 # Setup some global hashes and variables
-my $color  = 'bold white'; # Default text color to start with
-my $key;                   # Generic holder for hash keys
-my %players;               # Hash which contains tourney players
-my %tables;                # Hash which contains billiard tables in use
-my $tourney_running = 0;   # Determine if tourney is currently started
-my @stack;                 # Array used to keep the players in order
-my @dead;                  # Hold list of players with zero chips
-my @whobeat;               # Record who beat who
-my @whobeat_csv;           # Record who beat who for spreadsheet
-my $Colors = 'on';         # Keep track if user wants color display turned off
-#my $Colors = 'off';       # Keep track if user wants color display turned off
+my $color  = 'bold white';      # Default text color to start with
+my $key;                        # Generic holder for hash keys
+my %players;                    # Hash which contains tourney players
+my %tables;                     # Hash which contains billiard tables in use
+my $tourney_running = 0;        # Determine if tourney is currently started
+my @stack;                      # Array used to keep the players in order
+my @dead;                       # Hold list of players with zero chips
+my @whobeat;                    # Record who beat who
+my @whobeat_csv;                # Record who beat who for spreadsheet
+my $Colors = 'on';              # Keep track if user wants color display turned off
+my $most_recent_loser = 'none'; # Keep track of who lost recently for stack manipulation
+my $most_recent_winner = 'none'; # Keep track of who lost recently for stack manipulation
+#my $Colors = 'off';            # Keep track if user wants color display turned off
 print color($color) unless ( $Colors eq 'off');
 
 # Set the size of the console
@@ -79,9 +82,11 @@ if ( -e 'names.txt' ) {
     my @split = split /:/, $line;
     $players{$split[0]}{'chips'} = $split[1];
     $players{$split[0]}{'table'} = $split[2];
+    $players{$split[0]}{'fargo_id'} = $split[3];
     $players{$split[0]}{'won'} = 0;
   }
   $tables{'6'}=1;
+  $tables{'5'}=1;
 }
 
 # print Lightning Chip Logo
@@ -135,14 +140,16 @@ while(1) {
       print OUTCSV "Player #1,,,Player #2,\n";
       print OUTCSV "Fargo ID,Player Name,Score,Fargo ID,Player Name,Score,Date,Game,Table,Event\n";
       foreach(@whobeat_csv) {
-	my $line = $_;
-	my @split = split /:/, $line;
-	my $winner = $split[0];
-	my $loser  = $split[1];
-	my $table  = $split[2];
+	my $line      = $_;
+	my @split     = split /:/, $line;
+	my $winner    = $split[0];
+	my $loser     = $split[1];
+	my $table     = $split[2];
+	my $winner_id = $split[3];
+	my $loser_id  = $split[4];
 	$winner =~ s/\(\d+\)//g;
 	$loser  =~ s/\(\d+\)//g;
-	print OUTCSV ",$winner,1,,$loser,0,$DATE,,$table\n";
+	print OUTCSV "$winner_id,$winner,1,$loser_id,$loser,0,$DATE,,$table\n";
       }
       close OUTCSV;
 
@@ -388,6 +395,23 @@ sub draw_screen {
     print "q";
     print color('bold white') unless ( $Colors eq 'off');
     print ")uit\n";
+
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+    my $ampm = 'AM';
+    if ( $hour > 12 ) { 
+      $hour = $hour - 12;
+      $ampm = 'PM';
+    }
+    my $TIME = "$hour".':'."$min "."$ampm";
+
+    my @count_players = keys(%players);
+    my $count_players = @count_players;
+    if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $count_players < 7 ) )  {
+      print colored("\n\nSHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE", 'bright_yellow on_red'), "\n\n\n";
+    }
+    if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $count_players < 7 ) )  {
+      print "\n\nSHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE\n";
+    }
   }
 }
 
@@ -428,7 +452,8 @@ sub loser {
   if ( $yesorno eq 'y' ) {
 
     # Take away a chip.  :)
-    $players{$player}{'chips'}--;
+    $most_recent_loser = $player;
+    $players{$player}{'chips'}--; # Take a chip from the loser
 
     # Get table number player lost on
     my $table = $players{$player}{'table'};
@@ -446,8 +471,9 @@ sub loser {
           $players{$possible_opponent}{'won'}++;
           my $printit = sprintf ( "%-30s %-10s %-30s\n", "$possible_opponent", 'beat', "$player" );
 	  $opponent = $possible_opponent;
+          $most_recent_winner = $opponent;
 	  push @whobeat, $printit;
-	  push @whobeat_csv, "$possible_opponent:$player:$players{$possible_opponent}{'table'}";
+	  push @whobeat_csv, "$possible_opponent:$player:$players{$possible_opponent}{'table'}:$players{$possible_opponent}{'fargo_id'}:$players{$player}{'fargo_id'}";
         }	
       }
     }
@@ -460,6 +486,7 @@ sub loser {
     my $number_of_players = @players_count;
     my @tables_count = keys(%tables);
     my $tables_count = @tables_count;
+    my $raw_tables_count = @tables_count;
     $tables_count = $tables_count * 2;
 
     my $extra_players = 'no';
@@ -477,7 +504,7 @@ sub loser {
     }
 
     # Delete table from tourney once it's no longer needed.
-    if ( $extra_players eq 'no' ) {
+    if (( $extra_players eq 'no' ) and ( $raw_tables_count > 3 )) {
       my $remove_table = $players{$opponent}{'table'};
       $players{$opponent}{'table'} = 'none';
       header();
@@ -492,7 +519,7 @@ sub loser {
       delete $tables{$remove_table};
     }
 
-    if ( $extra_players eq 'yes' ) {
+    if (( $extra_players eq 'yes' ) and ( $number_of_players > 6 )) {
 
       foreach(@stack) {
         my $standup = $_;
@@ -633,6 +660,26 @@ sub new_player {
     return;
   }
 
+  print "Fargo ID Number:\n";
+  print color('bold cyan') unless ( $Colors eq 'off');
+  chomp(my $fargo_id = <STDIN>);
+  print color('bold white') unless ( $Colors eq 'off');
+  if ( $fargo_id !~ /^\d+\z/ ) {
+    $fargo_id = 0;
+  }
+  my $fargo_length = length($fargo_id);
+
+  my @fargo_id_keys = keys(%players);
+  chomp(@fargo_id_keys);
+  foreach(@fargo_id_keys) {
+    my $key = $_;
+    if (( $players{$key}{'fargo_id'} eq $fargo_id ) and ( $fargo_length > 2 )) {
+      print "This Fargo ID has already been used.\n";
+      sleep 3;
+      return;
+    } 
+  }
+
   print "Number of chips:\n";
   print color('bold cyan') unless ( $Colors eq 'off');
   chomp(my $chips = <STDIN>);
@@ -651,10 +698,11 @@ sub new_player {
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
-    $players{$name}{'chips'} = $chips;
-    $players{$name}{'table'} = 'none';
-    $players{$name}{'fargo'} = $fargo;
-    $players{$name}{'won'} = 0;
+    $players{$name}{'chips'}    = $chips;
+    $players{$name}{'table'}    = 'none';
+    $players{$name}{'fargo'}    = $fargo;
+    $players{$name}{'fargo_id'} = $fargo_id;
+    $players{$name}{'won'}      = 0;
 
     # If tourney is already started, put new player at the top of the stack
     if ( $tourney_running eq 1 ) {
@@ -800,6 +848,12 @@ sub delete_table {
         unshift @stack, $tempplayer;
       }
     }
+    if ( $players{$most_recent_winner}{'table'} eq $table ) {
+      $players{$most_recent_winner}{'table'} = 'none';
+      @stack=((grep $_ ne $most_recent_winner, @stack), $most_recent_winner);
+      my $tempplayer = pop @stack;
+      unshift @stack, $tempplayer;
+    }
     return;
   } else {
     return
@@ -865,22 +919,18 @@ sub shuffle_stack {
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
-    print "Shuffling players...\n";
     @stack = keys(%players);
     @stack = shuffle(@stack);
 
     # Reset all players to table 'none'
     foreach(@stack) {
       my $stackplayer = $_;
-      #if ( exists($players{$stackplayer}) ) {
       $players{$stackplayer}{'table'} = 'none';
-      #}
     }
 
     # Assign two players per table from the stack
     assign();
 
-    sleep 1;
     print "Shuffled.\n";
     sleep 1;
   }
@@ -906,15 +956,29 @@ sub delete_players {
 }
 
 sub assign {
-  my @tables = keys(%tables);
+  my @tables        = keys(%tables);
+  my @players       = keys(%players);
+  my $count_tables  = @tables;
+  $count_tables     = $count_tables * 2;
+  my $count_players = @players;
+  if ( $count_players % 2 == 1 ) {
+    $count_players = $count_players - 1;
+  }
+  my $counter = 0;
   foreach(@tables) {
     my $table = $_;
-    my $player1 = shift(@stack);
-    push @stack, $player1;
-    my $player2 = shift(@stack);
-    push @stack, $player2;
-    $players{$player1}{'table'} = "$table";
-    $players{$player2}{'table'} = "$table";
+    $counter++;
+    if (( $counter <= $count_players ) and ( $counter <= $count_tables )) {
+      my $player1 = shift(@stack);
+      push @stack, $player1;
+      $players{$player1}{'table'} = "$table";
+    }
+    $counter++;
+    if (( $counter <= $count_players ) and ( $counter <= $count_tables )) {
+      my $player2 = shift(@stack);
+      push @stack, $player2;
+      $players{$player2}{'table'} = "$table";
+    }
   }
 }
 
@@ -933,13 +997,25 @@ sub header {
   }
   my $TIME = "$hour".':'."$min "."$ampm";
 
-  if ( ( $tourney_running eq 0 ) and ( $Colors eq 'on' ) ) { print colored("\nLIGHTNING CHIP TOURNEY                               $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
+  my @players = keys(%players);
+  my $count_players = @players;
 
-  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on' ) ) { print colored("\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
+  if ( ( $tourney_running eq 0 ) and ( $Colors eq 'on'  ) ) { print colored("\nLIGHTNING CHIP TOURNEY                               $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
 
   if ( ( $tourney_running eq 0 ) and ( $Colors eq 'off' ) ) { print "\nLIGHTNING CHIP TOURNEY                               $TIME              --by Martin Colello\n\n\n" }
 
-  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) ) { print "\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello\n\n\n" }
+  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $count_players > 6 ) ) { 
+    print colored("\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n";
+  } elsif ( ( $tourney_running eq 1 ) and ( $Colors eq 'on' ) and ( $count_players < 7 ) )  {
+    print colored("\nLIGHTNING CHIP TOURNEY   SHUFFLE       Players: $number_of_players      $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n";
+  }
+
+
+  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $count_players > 6 ) ) { 
+    print "\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello\n\n\n";
+  } elsif ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $count_players < 7 ) )  {
+    print "\nLIGHTNING CHIP TOURNEY   SHUFFLE       Players: $number_of_players      $TIME              --by Martin Colello\n\n\n";
+  }
 
 
   print color('bold white') unless ( $Colors eq 'off');
