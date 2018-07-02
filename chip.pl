@@ -565,9 +565,9 @@ sub loser {
       }
     @stack=((grep $_ ne $player, @stack), $player);
     } 
-    if ( $number_of_players < 7 ) {
-      $shuffle_mode = 'on';
-    }
+    #if ( $number_of_players < 7 ) {
+    #  $shuffle_mode = 'on';
+    #}
     if ( $shuffle_mode eq 'on' ) {
       $players{$opponent}{'table'} = 'none';
       print "\n\nPlease Shuffle after all matches are completed.\n\n<any key>\n";
@@ -1041,14 +1041,14 @@ sub header {
 
   if ( ( $tourney_running eq 0 ) and ( $Colors eq 'off' ) ) { print "\nLIGHTNING CHIP TOURNEY                               $TIME              --by Martin Colello\n\n\n" }
 
-  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $count_players > 6 ) ) { 
+  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'off' ) ) { 
     print colored("\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n";
   } elsif ( ( $tourney_running eq 1 ) and ( $Colors eq 'on' ) and ( $shuffle_mode eq 'on' ) )  {
     print colored("\nLIGHTNING CHIP TOURNEY   SHUFFLE       Players: $number_of_players      $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n";
   }
 
 
-  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $count_players > 6 ) ) { 
+  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'off' ) ) { 
     print "\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello\n\n\n";
   } elsif ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'on' ) )  {
     print "\nLIGHTNING CHIP TOURNEY   SHUFFLE       Players: $number_of_players      $TIME              --by Martin Colello\n\n\n";
