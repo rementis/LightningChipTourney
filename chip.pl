@@ -63,6 +63,7 @@ my $most_recent_loser = 'none';  # Keep track of who lost recently for stack man
 my $most_recent_winner = 'none'; # Keep track of who lost recently for stack manipulation
 my $game = 'none';               # Store game type (8/9/10 ball)
 my $event;                       # Store Event name (Freezer's Chip etc)
+my $shuffle_mode = 'off';        # Keep track of shuffle mode off/on
 if ( $windows_ver =~ /Version 10/  ) {
   $Colors = 'on';
 } else {
@@ -195,7 +196,7 @@ while(1) {
       if ( $tourney_running eq 1 ) {
         $done = 1 if $choice eq 'L';
         $done = 1 if $choice eq 'S';
-        $done = 1 if $choice eq 'RE';
+        $done = 1 if $choice eq 'E';
       }
       if ( $tourney_running eq 0 ) {
         $done = 1 if $choice eq 'B';
@@ -205,17 +206,18 @@ while(1) {
   ReadMode 0;
 
   # Call subroutines based on menu selection
-  if ( $choice eq 'Q'  ) { quit_program()  }
-  if ( $choice eq 'N'  ) { new_player()    }
-  if ( $choice eq 'D'  ) { delete_player() }
-  if ( $choice eq 'A'  ) { new_table()     }
-  if ( $choice eq 'R'  ) { delete_table()  }
-  if ( $choice eq 'B'  ) { start_tourney() }
-  if ( $choice eq 'G'  ) { give_chip()     }
-  if ( $choice eq 'T'  ) { take_chip()     }
-  if ( $choice eq 'L'  ) { loser()         }
-  if ( $choice eq 'S'  ) { shuffle_stack() }
-  if ( $choice eq 'C'  ) { switch_colors() }
+  if ( $choice eq 'Q'  ) { quit_program()       }
+  if ( $choice eq 'N'  ) { new_player()         }
+  if ( $choice eq 'D'  ) { delete_player()      }
+  if ( $choice eq 'A'  ) { new_table()          }
+  if ( $choice eq 'R'  ) { delete_table()       }
+  if ( $choice eq 'B'  ) { start_tourney()      }
+  if ( $choice eq 'G'  ) { give_chip()          }
+  if ( $choice eq 'T'  ) { take_chip()          }
+  if ( $choice eq 'L'  ) { loser()              }
+  if ( $choice eq 'S'  ) { shuffle_stack()      }
+  if ( $choice eq 'E'  ) { enter_shuffle_mode() }
+  if ( $choice eq 'C'  ) { switch_colors()      }
 
 }# End of MAIN LOOP
 
@@ -347,7 +349,7 @@ sub draw_screen {
     print color('bold yellow') unless ( $Colors eq 'off');
     print "r";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")emove table (";
+    print ")emove table\n(";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "g";
     print color('bold white') unless ( $Colors eq 'off');
@@ -392,7 +394,7 @@ sub draw_screen {
     print color('bold yellow') unless ( $Colors eq 'off');
     print "r";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")emove table (";
+    print ")emove table\n(";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "g";
     print color('bold white') unless ( $Colors eq 'off');
@@ -410,6 +412,14 @@ sub draw_screen {
     print color('bold white') unless ( $Colors eq 'off');
     print ")huffle (";
     print color('bold yellow') unless ( $Colors eq 'off');
+    print "e";
+    print color('bold white') unless ( $Colors eq 'off');
+    if ( $shuffle_mode eq 'off' ) {
+      print ")nter shuffle mode (";
+    } else {
+      print ")xit shuffle mode (";
+    }
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "q";
     print color('bold white') unless ( $Colors eq 'off');
     print ")uit\n";
@@ -424,10 +434,10 @@ sub draw_screen {
 
     my @count_players = keys(%players);
     my $count_players = @count_players;
-    if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $count_players < 7 ) )  {
+    if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'on' ) )  {
       print colored("\n\nSHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE", 'bright_yellow on_red'), "\n\n\n";
     }
-    if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $count_players < 7 ) )  {
+    if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'on' ) )  {
       print "\n\nSHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE\n";
     }
   }
@@ -537,7 +547,8 @@ sub loser {
       delete $tables{$remove_table};
     }
 
-    if (( $extra_players eq 'yes' ) and ( $number_of_players > 6 )) {
+    #if (( $extra_players eq 'yes' ) and ( $number_of_players > 6 )) {
+    if (( $extra_players eq 'yes' ) and ( $shuffle_mode eq 'off' )) {
 
       foreach(@stack) {
         my $standup = $_;
@@ -555,6 +566,9 @@ sub loser {
     @stack=((grep $_ ne $player, @stack), $player);
     } 
     if ( $number_of_players < 7 ) {
+      $shuffle_mode = 'on';
+    }
+    if ( $shuffle_mode eq 'on' ) {
       $players{$opponent}{'table'} = 'none';
       print "\n\nPlease Shuffle after all matches are completed.\n\n<any key>\n";
       yesorno('any');
@@ -1029,14 +1043,14 @@ sub header {
 
   if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $count_players > 6 ) ) { 
     print colored("\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n";
-  } elsif ( ( $tourney_running eq 1 ) and ( $Colors eq 'on' ) and ( $count_players < 7 ) )  {
+  } elsif ( ( $tourney_running eq 1 ) and ( $Colors eq 'on' ) and ( $shuffle_mode eq 'on' ) )  {
     print colored("\nLIGHTNING CHIP TOURNEY   SHUFFLE       Players: $number_of_players      $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n";
   }
 
 
   if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $count_players > 6 ) ) { 
     print "\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello\n\n\n";
-  } elsif ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $count_players < 7 ) )  {
+  } elsif ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'on' ) )  {
     print "\nLIGHTNING CHIP TOURNEY   SHUFFLE       Players: $number_of_players      $TIME              --by Martin Colello\n\n\n";
   }
 
@@ -1112,10 +1126,24 @@ sub game_and_event {
   chomp($game);
 }
 
-
-
-
-
+sub enter_shuffle_mode {
+  header();
+  if ( $shuffle_mode eq 'off' ) {
+    print "\n\n\n\n\nThis will enter shuffle mode.  In this mode all games need to be completed before\nyou shuffle and start the next round.\n\n";
+  } else {
+    print "\n\n\n\n\nThis will EXIT shuffle mode.\n\n";
+  }
+  print "Are you sure?\n";
+  my $yesorno = yesorno();
+  chomp($yesorno);
+  if ( $yesorno eq 'y' ) {
+    if ( $shuffle_mode eq 'on' ) { 
+      $shuffle_mode = 'off';
+    } elsif ( $shuffle_mode eq 'off' ) {
+      $shuffle_mode = 'on';
+    }
+  }
+}
 
 
 
