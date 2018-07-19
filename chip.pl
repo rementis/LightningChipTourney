@@ -64,6 +64,7 @@ my $most_recent_winner = 'none'; # Keep track of who lost recently for stack man
 my $game = 'none';               # Store game type (8/9/10 ball)
 my $event;                       # Store Event name (Freezer's Chip etc)
 my $shuffle_mode = 'off';        # Keep track of shuffle mode off/on
+my $send = 'none';               # Keep track of send new player to table information
 if ( $windows_ver =~ /Version 10/  ) {
   $Colors = 'on';
 } else {
@@ -440,6 +441,11 @@ sub draw_screen {
     if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'on' ) )  {
       print "\n\nSHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE\n";
     }
+    if ( ( $send ne 'none' ) and ( $shuffle_mode ne 'on' ) ) {
+      print color('bold green') unless ( $Colors eq 'off');
+      print "$send";
+      print color('bold white') unless ( $Colors eq 'off');
+    }
   }
 }
 
@@ -473,11 +479,6 @@ sub loser {
     sleep 5;
     return;
   }
-
-  print "\n$player lost, correct?\n";
-  my $yesorno = yesorno();
-  chomp($yesorno);
-  if ( $yesorno eq 'y' ) {
 
     # Take away a chip.  :)
     $most_recent_loser = $player;
@@ -547,7 +548,6 @@ sub loser {
       delete $tables{$remove_table};
     }
 
-    #if (( $extra_players eq 'yes' ) and ( $number_of_players > 6 )) {
     if (( $extra_players eq 'yes' ) and ( $shuffle_mode eq 'off' )) {
 
       foreach(@stack) {
@@ -558,22 +558,18 @@ sub loser {
         if ( exists( $players{$standup} ) and ( $players{$standup}{'table'} eq 'none' ) ) { 
           $players{$standup}{'table'} = $table;
           header();
-          print "\n\n\n\n\n\n\nSend $standup to table $table\n\n<any key>\n";
-          yesorno('any');
+	  $send = "\n\nSend $standup to table $table\n";
           last;
         }
       }
     @stack=((grep $_ ne $player, @stack), $player);
     } 
-    #if ( $number_of_players < 7 ) {
-    #  $shuffle_mode = 'on';
-    #}
+    if ( $number_of_players < 7 ) {
+      $shuffle_mode = 'on';
+    }
     if ( $shuffle_mode eq 'on' ) {
       $players{$opponent}{'table'} = 'none';
-      print "\n\nPlease Shuffle after all matches are completed.\n\n<any key>\n";
-      yesorno('any');
     }
-  }
 }
 
 sub start_tourney {
