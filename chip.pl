@@ -6,6 +6,8 @@
 #     Martin Colello      #
 #   April/May/June 2018   #
 #                         #
+# Add move table Aug 2018 #
+#                         #
 ###########################
 
 use strict;
@@ -195,6 +197,7 @@ while(1) {
       $done = 1 if $choice eq 'T';
       $done = 1 if $choice eq 'C';
       if ( $tourney_running eq 1 ) {
+        $done = 1 if $choice eq 'M';
         $done = 1 if $choice eq 'L';
         $done = 1 if $choice eq 'S';
         $done = 1 if $choice eq 'E';
@@ -219,6 +222,7 @@ while(1) {
   if ( $choice eq 'S'  ) { shuffle_stack()      }
   if ( $choice eq 'E'  ) { enter_shuffle_mode() }
   if ( $choice eq 'C'  ) { switch_colors()      }
+  if ( $choice eq 'M'  ) { move_player()        }
 
 }# End of MAIN LOOP
 
@@ -408,6 +412,10 @@ sub draw_screen {
     print "c";
     print color('bold white') unless ( $Colors eq 'off');
     print ")olors (";
+    print color('bold yellow') unless ( $Colors eq 'off');
+    print "m";
+    print color('bold white') unless ( $Colors eq 'off');
+    print ")ove player (";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "s";
     print color('bold white') unless ( $Colors eq 'off');
@@ -828,8 +836,8 @@ sub take_chip {
   
   my $player = $players[$numselection];
   chomp($player);
-  if ( $players{$player}{'table'} ne 'none' ) {
-    print "Cannot take chip from player who is at table.\n";
+  if ( $players{$player}{'chips'} < 2 ) {
+    print "Cannot take last chip from player.\n";
     sleep 3;
     return;
   }
@@ -845,6 +853,37 @@ sub take_chip {
     return
   } 
 }
+
+sub move_player {
+
+  my @players = keys(%players);
+  @players = sort(@players);
+
+  header();
+  $color = 'bold white';
+  print color($color) unless ( $Colors eq 'off');
+  print "\nPlease choose number of player to move:\n\n";
+  my $numselection = print_menu_array(@players);
+
+  my $player = $players[$numselection];
+  chomp($player);
+
+  my @tables = keys(%tables);
+  @tables = sort { $a <=> $b } (@tables);
+  push @tables, 'none';
+
+  header();
+  print "\nMove $player to which table?:\n\n";
+  my $numselection = print_menu_array(@tables);
+
+  my $table = $tables[$numselection];
+  chomp($table);
+
+  $players{$player}{'table'} = $table;
+
+  return;
+}
+
 
 sub delete_table {
 
