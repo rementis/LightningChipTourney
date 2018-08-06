@@ -23,6 +23,7 @@ $year = $year + 1900;
 my @abbr = qw(January February March April May June July August September October November December);
 
 # Set output file to user's Desktop
+my $fargo_storage_file = 'fargo.txt';
 my $desktop     = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
 my $desktop_csv = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
 my $DATE = "$abbr[$mon]"."_$mday"."_$year";
@@ -33,6 +34,7 @@ if ( $^O =~ /MSWin32/ ) {
   $profile     =~ s/userprofile=//i;
   $desktop     = $profile . "\\desktop\\$desktop";
   $desktop_csv = $profile . "\\desktop\\$desktop_csv";
+  $fargo_storage_file = $profile . "\\desktop\\$fargo_storage_file";
   $windows_ver = `ver`;
   #print "ver is $windows_ver\n";
   #sleep 5;
@@ -679,6 +681,24 @@ sub new_table {
 
 sub new_player {
   header();
+
+  my %fargo_id;
+  my $potential_fargo_id = 0;
+  my @fargo_storage;
+  if ( -e $fargo_storage_file ) {
+    open FARGO, "<$fargo_storage_file";
+    @fargo_storage = <FARGO>;
+    close FARGO;
+  }
+
+  chomp(@fargo_storage);
+
+  foreach(@fargo_storage) {
+    my $line = $_;
+    my @split = split /:/, $line;
+    $fargo_id{$split[0]} = $split[1];
+  }
+
   print "Player Name:\n";
   print color('bold cyan') unless ( $Colors eq 'off');
   chomp(my $name = <STDIN>);
@@ -694,6 +714,7 @@ sub new_player {
     return;
   }
 
+  my $name_lower = lc($name);
   $name = "$name ($fargo)";
   if ( exists($players{$name}) ) {
     print "Player already exists.\n";
@@ -701,9 +722,21 @@ sub new_player {
     return;
   }
 
-  print "Fargo ID Number:\n";
+  if ( exists($fargo_id{$name_lower}) ) {
+    $potential_fargo_id = $fargo_id{$name_lower};
+  }
+
+  if ( $potential_fargo_id == 0 ) {
+    print "Fargo ID Number:\n";
+  } else {
+    print "Fargo ID Number [$potential_fargo_id]:\n";
+  }
   print color('bold cyan') unless ( $Colors eq 'off');
   chomp(my $fargo_id = <STDIN>);
+  if (( $potential_fargo_id > 1 ) and ( $fargo_id eq "" )) {
+    $fargo_id = $potential_fargo_id;
+  }
+
   print color('bold white') unless ( $Colors eq 'off');
   if ( $fargo_id !~ /^\d+\z/ ) {
     $fargo_id = 0;
@@ -735,7 +768,7 @@ sub new_player {
     sleep 3;
     return;
   }
-  print "$name with $chips chips, correct?\n";
+  print "$name with $chips chips and Fargo ID $fargo_id, correct?\n";
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
@@ -748,6 +781,18 @@ sub new_player {
     # If tourney is already started, put new player at the top of the stack
     if ( $tourney_running eq 1 ) {
       unshift @stack, $name;
+    }
+
+    # Write out new fargo keys file
+    if ( $fargo_length > 2 ) {
+      $fargo_id{$name_lower} = $fargo_id;
+      open OUT, ">$fargo_storage_file";
+      my @fargo_id_keys = keys(%fargo_id);
+      @fargo_id_keys = sort(@fargo_id_keys);
+      foreach(@fargo_id_keys){
+        my $key = $_;
+        print OUT "$key:$fargo_id{$key}\n";
+      }
     }
   } else {
     return
