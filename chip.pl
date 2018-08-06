@@ -18,15 +18,17 @@ use POSIX;
 
 # Get current date
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+if ( $min < 10 ) { $min = "0$min" }
+if ( $sec < 10 ) { $sec = "0$sec" }
 $year = $year + 1900;
 
 my @abbr = qw(January February March April May June July August September October November December);
+my $DATE = "$hour".':'."$min".":$sec"."_$abbr[$mon]"."_$mday"."_$year";
 
 # Set output file to user's Desktop
 my $fargo_storage_file = 'fargo.txt';
 my $desktop     = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
 my $desktop_csv = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
-my $DATE = "$abbr[$mon]"."_$mday"."_$year";
 my $windows_ver = 'none';
 
 if ( $^O =~ /MSWin32/ ) {
@@ -156,28 +158,11 @@ while(1) {
       }
       close OUTFILE;
 
-      open OUTCSV, ">$outfile_csv";
-      print OUTCSV "Player #1,,,Player #2,\n";
-      print OUTCSV "Fargo ID,Player Name,Score,Fargo ID,Player Name,Score,Date,Game,Table,Event\n";
-      foreach(@whobeat_csv) {
-	my $line      = $_;
-	my @split     = split /:/, $line;
-	my $winner    = $split[0];
-	my $loser     = $split[1];
-	my $table     = $split[2];
-	my $winner_id = $split[3];
-	my $loser_id  = $split[4];
-	$winner =~ s/\(\d+\)//g;
-	$loser  =~ s/\(\d+\)//g;
-	print OUTCSV "$winner_id,$winner,1,$loser_id,$loser,0,$DATE,$game,$table,$event\n";
-      }
-      close OUTCSV;
+      history();
 
       # Open log file
       if ( $^O =~ /MSWin32/     ) { system("start notepad.exe $desktop") }
-      if ( $^O =~ /MSWin32/     ) { system("start $outfile_csv") }
       if ( $^O =~ /next|darwin/ ) { system("open $desktop") }
-      if ( $^O =~ /next|darwin/ ) { system("open $outfile_csv") }
       exit;
     }
   }
@@ -200,6 +185,7 @@ while(1) {
       $done = 1 if $choice eq 'C';
       if ( $tourney_running eq 1 ) {
         $done = 1 if $choice eq 'M';
+        $done = 1 if $choice eq 'H';
         $done = 1 if $choice eq 'L';
         $done = 1 if $choice eq 'S';
         $done = 1 if $choice eq 'E';
@@ -225,10 +211,18 @@ while(1) {
   if ( $choice eq 'E'  ) { enter_shuffle_mode() }
   if ( $choice eq 'C'  ) { switch_colors()      }
   if ( $choice eq 'M'  ) { move_player()        }
+  if ( $choice eq 'H'  ) { history()            }
 
 }# End of MAIN LOOP
 
 sub draw_screen {
+  my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+  if ( $min < 10 ) { $min = "0$min" }
+  if ( $sec < 10 ) { $sec = "0$sec" }
+  $year = $year + 1900;
+
+  my @abbr = qw(January February March April May June July August September October November December);
+  $DATE = "$hour".':'."$min".":$sec"."_$abbr[$mon]"."_$mday"."_$year";
   $screen_contents = "\n";
 
   # Count the number of players still alive
@@ -401,7 +395,11 @@ sub draw_screen {
     print color('bold yellow') unless ( $Colors eq 'off');
     print "r";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")emove table\n(";
+    print ")emove table (";
+    print color('bold yellow') unless ( $Colors eq 'off');
+    print "h";
+    print color('bold white') unless ( $Colors eq 'off');
+    print ")istory\n(";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "g";
     print color('bold white') unless ( $Colors eq 'off');
@@ -441,15 +439,20 @@ sub draw_screen {
       $hour = $hour - 12;
       $ampm = 'PM';
     }
+
+    # Fix the single digit minute issue
+    if ( $min < 10 ) { $min = "0$min" }
+    if ( $sec < 10 ) { $sec = "0$sec" }
+
     my $TIME = "$hour".':'."$min "."$ampm";
 
     my @count_players = keys(%players);
     my $count_players = @count_players;
     if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'on' ) )  {
-      print colored("\n\nSHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE", 'bright_yellow on_red'), "\n\n\n";
+      print colored("\n\nSHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE", 'bright_yellow on_red'), "\n\n\n";
     }
     if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'on' ) )  {
-      print "\n\nSHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE      SHUFFLE MODE\n";
+      print "\n\nSHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE\n";
     }
     if ( ( $send ne 'none' ) and ( $shuffle_mode ne 'on' ) ) {
       print color('bold green') unless ( $Colors eq 'off');
@@ -512,7 +515,7 @@ sub loser {
 	  $opponent = $possible_opponent;
           $most_recent_winner = $opponent;
 	  push @whobeat, $printit;
-	  push @whobeat_csv, "$possible_opponent:$player:$players{$possible_opponent}{'table'}:$players{$possible_opponent}{'fargo_id'}:$players{$player}{'fargo_id'}";
+	  push @whobeat_csv, "$possible_opponent"."SPLIT"."$player"."SPLIT"."$players{$possible_opponent}{'table'}"."SPLIT"."$players{$possible_opponent}{'fargo_id'}"."SPLIT"."$players{$player}{'fargo_id'}"."SPLIT"."$DATE";
         }	
       }
     }
@@ -1107,6 +1110,10 @@ sub header {
   $number_of_players = @countplayers;
 
   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+
+  if ( $min < 10 ) { $min = "0$min" }
+  if ( $sec < 10 ) { $sec = "0$min" }
+
   my $ampm = 'AM';
   if ( $hour > 12 ) { 
     $hour = $hour - 12;
@@ -1225,6 +1232,32 @@ sub enter_shuffle_mode {
   }
 }
 
+sub history {
+  header();
+  print "Opening history file...\n";
+  open OUTCSV, ">$outfile_csv";
+  print OUTCSV "Player #1,,,Player #2,\n";
+  print OUTCSV "Fargo ID,Player Name,Score,Fargo ID,Player Name,Score,Date,Game,Table,Event\n";
+  foreach(@whobeat_csv) {
+    my $line       = $_;
+    my @split      = split /SPLIT/, $line;
+    my $winner     = $split[0];
+    my $loser      = $split[1];
+    my $table      = $split[2];
+    my $winner_id  = $split[3];
+    my $loser_id   = $split[4];
+    my $date_lost  = $split[5];
+    $winner =~ s/\(\d+\)//g;
+    $loser  =~ s/\(\d+\)//g;
+    print OUTCSV "$winner_id,$winner,1,$loser_id,$loser,0,$date_lost,$game,$table,$event\n";
+  }
+  close OUTCSV;
 
+  # Open log file
+  if ( $^O =~ /MSWin32/     ) { system("start $outfile_csv") }
+  if ( $^O =~ /next|darwin/ ) { system("open $outfile_csv") }
+  print "Please wait...\n";
+  sleep 2;
+}
 
 
