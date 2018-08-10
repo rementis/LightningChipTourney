@@ -269,12 +269,18 @@ sub draw_screen {
       my $player = $split[1];
       my $chips  = $split[2];
       my $won    = $split[3];
+      if ( $table eq 'none' ) { $table = 'In line' }
       my $printit = sprintf ( "%-30s %-10s %-10s %-8s\n", "$player", "$won", "$chips", "$table" );
-      if (( $stack_player eq $player ) and ( $table eq 'none' )) {
+      if ( $tourney_running eq 0 ) { 
+        $printit = sprintf ( "%-30s %-10s %-10s %-8s\n", "$player", "$won", "$chips", " " );
+      }
+      if (( $stack_player eq $player ) and ( $table eq 'In line' )) {
         push @final_display, $printit;
       }
     }
   }
+  my $blank_line = "\n";
+  push @final_display, "$blank_line";
 
   # Add lines WITH table numbers to array
   foreach(@display_sort) {
@@ -577,7 +583,7 @@ sub loser {
       }
     @stack=((grep $_ ne $player, @stack), $player);
     } 
-    if ( $number_of_players < 7 ) {
+    if ( $number_of_players < 5 ) {
       $shuffle_mode = 'on';
     }
     if ( $shuffle_mode eq 'on' ) {
@@ -831,7 +837,21 @@ sub delete_player {
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
-    delete $players{$player};
+    delete $players{$player}{'chips'};
+    delete $players{$player}{'table'};
+    delete $players{$player}{'won'};
+    delete $players{$player}{'fargo_id'};
+    delete $players{$player};   # Delete player from hash %players
+    # Delete player from stack
+    my @new_stack;
+    foreach(@stack) {
+      my $line = $_;
+      if ( $player eq $line ) { 
+        next;
+      }
+      push @new_stack, $line;
+    }
+    @stack = @new_stack;
     return;
   } else {
     return
@@ -1061,7 +1081,6 @@ sub delete_players {
   @players = sort(@players);
   foreach(@players){
     my $player = $_;
-
     if ( $players{$player}{'chips'} eq 0 ) {
       # Add player to dead player array
       push @dead, "$player: $players{$player}{'won'}";
@@ -1070,8 +1089,18 @@ sub delete_players {
       delete $players{$player}{'chips'};
       delete $players{$player}{'table'};
       delete $players{$player}{'won'};
-      delete $players{$player};
-    }
+      delete $players{$player}{'fargo_id'};
+      # Delete player from stack
+      my @new_stack;
+      foreach(@stack) {
+        my $line = $_;
+        if ( $player eq $line ) {
+          next;
+        }
+        push @new_stack, $line;
+      }
+      @stack = @new_stack;     delete $players{$player};
+      }
   }
 }
 
