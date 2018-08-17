@@ -871,6 +871,9 @@ sub new_player_from_db {
   print color($color) unless ( $Colors eq 'off');
   print "\nPlease choose number of player to add\n\n";
   my $numselection = print_menu_array(@db);
+  if ( $numselection == 1000 ) {
+    return;
+  }
 
   my $line     = $db[$numselection];
   my @split    = split /:/, $line;
@@ -929,6 +932,9 @@ sub delete_player {
   print color($color) unless ( $Colors eq 'off');
   print "\nPlease choose number of player to delete:\n\n";
   my $numselection = print_menu_array(@players);
+  if ( $numselection == 1000 ) {
+    return;
+  }
 
   my $player = $players[$numselection];
   chomp($player);
