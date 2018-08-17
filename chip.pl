@@ -27,6 +27,7 @@ my $DATE = "$hour".':'."$min".":$sec"."_$abbr[$mon]"."_$mday"."_$year";
 
 # Set output file to user's Desktop
 my $fargo_storage_file = 'fargo.txt';
+my $player_db = 'chip_player.txt';
 my $desktop     = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
 my $desktop_csv = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
 my $windows_ver = 'none';
@@ -36,11 +37,20 @@ if ( $^O =~ /MSWin32/ ) {
   $profile     =~ s/userprofile=//i;
   $desktop     = $profile . "\\desktop\\$desktop";
   $desktop_csv = $profile . "\\desktop\\$desktop_csv";
-  $fargo_storage_file = $profile . "\\desktop\\$fargo_storage_file";
+  if ( exists $ENV{'LOCALAPPDATA'} ) {
+    my $local_app_data = $ENV{'LOCALAPPDATA'};
+    $fargo_storage_file = "$local_app_data\\$fargo_storage_file";
+    $player_db = "$local_app_data\\$player_db";
+  } else {
+    $fargo_storage_file = $profile . "\\desktop\\$fargo_storage_file";
+    $player_db = $profile . "\\desktop\\$player_db";
+  }
   $windows_ver = `ver`;
-  #print "ver is $windows_ver\n";
-  #sleep 5;
 }
+
+#print "$fargo_storage_file\n";
+#print "$player_db\n";
+#exit;
 
 # Hold state of screen in case we need to exit program
 my $screen_contents;
@@ -183,6 +193,7 @@ while(1) {
       $done = 1 if $choice eq 'R';
       $done = 1 if $choice eq 'T';
       $done = 1 if $choice eq 'C';
+      $done = 1 if $choice eq 'P';
       if ( $tourney_running eq 1 ) {
         $done = 1 if $choice eq 'M';
         $done = 1 if $choice eq 'H';
@@ -212,6 +223,7 @@ while(1) {
   if ( $choice eq 'C'  ) { switch_colors()      }
   if ( $choice eq 'M'  ) { move_player()        }
   if ( $choice eq 'H'  ) { history()            }
+  if ( $choice eq 'P'  ) { new_player_from_db() }
 
 }# End of MAIN LOOP
 
@@ -297,11 +309,20 @@ sub draw_screen {
   }
 
   # Print to screen in correct TABLE order
+  my $first_line = 'yes';
   my $color  = 'bold white';
   foreach(@final_display) {
     my $line   = $_;
     print color($color) unless ( $Colors eq 'off');;
     if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
+    if ($first_line eq 'yes') {
+      $line =~ s/In line/Next up/;
+      $first_line = 'no';
+    }
+    if ($shuffle_mode eq 'on') {
+      $line =~ s/In line/ /;
+      $line =~ s/Next up/ /;
+    }
     print "$line";
     $screen_contents .= $line;
   }
@@ -366,6 +387,10 @@ sub draw_screen {
     print color('bold white') unless ( $Colors eq 'off');
     print ")ake chip (";
     print color('bold yellow') unless ( $Colors eq 'off');
+    print "p";
+    print color('bold white') unless ( $Colors eq 'off');
+    print ")layer from db (";
+    print color('bold yellow') unless ( $Colors eq 'off');
     print "q";
     print color('bold white') unless ( $Colors eq 'off');
     print ")uit program (";
@@ -414,6 +439,10 @@ sub draw_screen {
     print "t";
     print color('bold white') unless ( $Colors eq 'off');
     print ")ake chip (";
+    print color('bold yellow') unless ( $Colors eq 'off');
+    print "p";
+    print color('bold white') unless ( $Colors eq 'off');
+    print ")layer from db (";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "c";
     print color('bold white') unless ( $Colors eq 'off');
@@ -700,7 +729,15 @@ sub new_player {
     close FARGO;
   }
 
+  my @player_db;
+  if ( -e $player_db ) {
+    open PLAYER_DB, "<$player_db";
+    @player_db = <PLAYER_DB>;
+    close PLAYER_DB;
+  }
+
   chomp(@fargo_storage);
+  chomp(@player_db);
 
   foreach(@fargo_storage) {
     my $line = $_;
@@ -718,12 +755,11 @@ sub new_player {
   chomp(my $fargo = <STDIN>);
   print color('bold white') unless ( $Colors eq 'off');
   if ( $fargo !~ /^\d+\z/ ) {
-    print "Fargo rating must be a number.\n";
-    sleep 3;
-    return;
+    $fargo = 0;;
   }
 
   my $name_lower = lc($name);
+  my $name_db = $name;
   $name = "$name ($fargo)";
   if ( exists($players{$name}) ) {
     print "Player already exists.\n";
@@ -777,6 +813,7 @@ sub new_player {
     sleep 3;
     return;
   }
+
   print "$name with $chips chips and Fargo ID $fargo_id, correct?\n";
   my $yesorno = yesorno();
   chomp($yesorno);
@@ -786,6 +823,8 @@ sub new_player {
     $players{$name}{'fargo'}    = $fargo;
     $players{$name}{'fargo_id'} = $fargo_id;
     $players{$name}{'won'}      = 0;
+    my $player_db_line = "$name_db:$fargo_id";
+    push @player_db, $player_db_line;
 
     # If tourney is already started, put new player at the top of the stack
     if ( $tourney_running eq 1 ) {
@@ -793,36 +832,104 @@ sub new_player {
     }
 
     # Write out new fargo keys file
-    if ( $fargo_length > 2 ) {
-      $fargo_id{$name_lower} = $fargo_id;
-      open OUT, ">$fargo_storage_file";
-      my @fargo_id_keys = keys(%fargo_id);
-      @fargo_id_keys = sort(@fargo_id_keys);
-      foreach(@fargo_id_keys){
-        my $key = $_;
-        print OUT "$key:$fargo_id{$key}\n";
-      }
+    $fargo_id{$name_lower} = $fargo_id;
+    open OUT, ">$fargo_storage_file";
+    my @fargo_id_keys = keys(%fargo_id);
+    @fargo_id_keys = sort(@fargo_id_keys);
+    foreach(@fargo_id_keys){
+      my $key = $_;
+      print OUT "$key:$fargo_id{$key}\n";
     }
-  } else {
-    return
+    
+    # Write out new player databases file
+    $fargo_id{$name_lower} = $fargo_id;
+    open OUT, ">$player_db";
+    foreach(@player_db){
+      my $line = $_;
+      print OUT "$line\n";
+    }
   } 
 }
 
+sub new_player_from_db {
+  header();
+
+  # If db file does not exist, exit subroutine.
+  if ( ! -e $player_db ) { 
+    print "No db yet.\n";
+    sleep 1;
+    return;
+  }
+
+  open DB, "<$player_db" or return;
+  chomp(my @db = <DB>);
+  close DB;
+
+  @db = sort(@db);
+
+  $color = 'bold white';
+  print color($color) unless ( $Colors eq 'off');
+  print "\nPlease choose number of player to add\n\n";
+  my $numselection = print_menu_array(@db);
+
+  my $line     = $db[$numselection];
+  my @split    = split /:/, $line;
+  my $name     = $split[0];
+  my $fargo_id = $split[1];
+
+  print "Fargo Rating:\n";
+  print color('bold cyan') unless ( $Colors eq 'off');
+  chomp(my $fargo = <STDIN>);
+  print color('bold white') unless ( $Colors eq 'off');
+  if ( $fargo !~ /^\d+\z/ ) {
+    $fargo = 0;;
+  }
+
+  $name = "$name ($fargo)";
+  if ( exists($players{$name}) ) {
+    print "Player already exists.\n";
+    sleep 3;
+    return;
+  }
+
+  print "\nNumber of chips:\n";
+  print color('bold cyan') unless ( $Colors eq 'off');
+  chomp(my $chips = <STDIN>);
+  print color('bold white') unless ( $Colors eq 'off');
+  if ( $chips !~ /^\d+\z/ ) {
+    print "Chips must be a number.\n";
+    sleep 3;
+    return;
+  }
+  if ( $chips < 1 ) {
+    print "Chips must be more than zero.\n";
+    sleep 3;
+    return;
+  }
+  $players{$name}{'chips'}    = $chips;
+  $players{$name}{'table'}    = 'none';
+  $players{$name}{'fargo'}    = $fargo;
+  $players{$name}{'fargo_id'} = $fargo_id;
+  $players{$name}{'won'}      = 0;
+
+  # If tourney is already started, put new player at the top of the stack
+  if ( $tourney_running eq 1 ) {
+    unshift @stack, $name;
+  }
+}
+    
+
 sub delete_player {
+
 
   my @players = keys(%players);
   @players = sort(@players);
 
-  header();
   $color = 'bold white';
   print color($color) unless ( $Colors eq 'off');
   print "\nPlease choose number of player to delete:\n\n";
   my $numselection = print_menu_array(@players);
 
-  if ( $numselection == 1000 ) {
-    return;
-  }
-  
   my $player = $players[$numselection];
   chomp($player);
 
