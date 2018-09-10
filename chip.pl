@@ -31,6 +31,7 @@ my $player_db = 'chip_player.txt';
 my $desktop     = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
 my $desktop_csv = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
 my $windows_ver = 'none';
+my $png = 'Lightning.png';
 
 if ( $^O =~ /MSWin32/ ) {
   chomp(my $profile = `set userprofile`);
@@ -41,16 +42,20 @@ if ( $^O =~ /MSWin32/ ) {
     my $local_app_data = $ENV{'LOCALAPPDATA'};
     $fargo_storage_file = "$local_app_data\\$fargo_storage_file";
     $player_db = "$local_app_data\\$player_db";
+    $png = "$local_app_data\\$png";
   } else {
     $fargo_storage_file = $profile . "\\desktop\\$fargo_storage_file";
     $player_db = $profile . "\\desktop\\$player_db";
+    $png = $profile . "\\desktop\\$png";
   }
   $windows_ver = `ver`;
 }
 
-#print "$fargo_storage_file\n";
-#print "$player_db\n";
-#exit;
+# Display logo
+if ( -e $png ) {
+  if ( $^O =~ /MSWin32/     ) { system("start $png") }
+  if ( $^O =~ /next|darwin/ ) { system("open $png") }
+}
 
 # Hold state of screen in case we need to exit program
 my $screen_contents;
