@@ -959,7 +959,7 @@ sub delete_player {
     delete $players{$player}{'table'};
     delete $players{$player}{'won'};
     delete $players{$player}{'fargo_id'};
-    delete $players{$player};   # Delete player from hash %players
+    delete $players{$player};
     # Delete player from stack
     my @new_stack;
     foreach(@stack) {
@@ -1106,12 +1106,12 @@ sub delete_table {
         unshift @stack, $tempplayer;
       }
     }
-    if ( $players{$most_recent_winner}{'table'} eq $table ) {
-      $players{$most_recent_winner}{'table'} = 'none';
-      @stack=((grep $_ ne $most_recent_winner, @stack), $most_recent_winner);
-      my $tempplayer = pop @stack;
-      unshift @stack, $tempplayer;
-    }
+    #if ( $players{$most_recent_winner}{'table'} eq $table ) {
+    #  $players{$most_recent_winner}{'table'} = 'none';
+    #  @stack=((grep $_ ne $most_recent_winner, @stack), $most_recent_winner);
+    #  my $tempplayer = pop @stack;
+    #  unshift @stack, $tempplayer;
+    #}
     return;
   } else {
     return
@@ -1406,5 +1406,4 @@ sub history {
   print "Please wait...\n";
   sleep 2;
 }
-
 
