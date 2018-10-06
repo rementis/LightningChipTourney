@@ -15,6 +15,8 @@ use Term::ReadKey;
 use List::Util 'shuffle';
 use Term::ANSIColor;
 use POSIX;
+use Array::Columnize;
+$SIG{INT} = 'IGNORE';
 
 # Get current date
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
@@ -872,10 +874,14 @@ sub new_player_from_db {
 
   @db = sort(@db);
 
+  my @unique = do { my %seen; grep { !$seen{$_}++ } @db };
+
+  @db = @unique;
+
   $color = 'bold white';
   print color($color) unless ( $Colors eq 'off');
   print "\nPlease choose number of player to add\n\n";
-  my $numselection = print_menu_array(@db);
+  my $numselection = print_menu_array_columns(@db);
   if ( $numselection == 1000 ) {
     return;
   }
@@ -1314,6 +1320,41 @@ sub print_menu_array {
     print color($color) unless ( $Colors eq 'off');
     print "$num: $choice\n";
   }
+  print "\n";
+  $color = 'bold white';
+  print color($color) unless ( $Colors eq 'off');
+  my $numselection = <STDIN>;
+  chomp($numselection);
+  if ( $numselection !~ /\d/) {
+    print "Needed to enter a number, exiting...\n";
+    sleep 1;
+    return 1000;
+  }
+
+  if ( ($numselection > $num) or ($numselection == 0) ) {
+    print "Invalid selection, exiting...\n";
+    sleep 1;
+    return 1000;
+  }
+
+  $numselection--;
+  return $numselection;
+}
+
+sub print_menu_array_columns {
+  my @array = @_;
+  my $num = 0;
+  my @display;
+  foreach(@array) {
+    my $choice = $_;
+    $num++;
+    #if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
+    #print color($color) unless ( $Colors eq 'off');
+    push @display, "$num:$choice";
+  }
+
+  print columnize(\@display, {displaywidth => 120});
+
   print "\n";
   $color = 'bold white';
   print color($color) unless ( $Colors eq 'off');
