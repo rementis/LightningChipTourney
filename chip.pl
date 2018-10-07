@@ -29,6 +29,7 @@ my $DATE = "$hour".':'."$min".":$sec"."_$abbr[$mon]"."_$mday"."_$year";
 
 # Set output file to user's Desktop
 my $fargo_storage_file = 'fargo.txt';
+my $chip_rating_storage_file = 'chip_rating.txt';
 my $player_db = 'chip_player.txt';
 my $desktop     = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
 my $desktop_csv = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
@@ -43,10 +44,12 @@ if ( $^O =~ /MSWin32/ ) {
   if ( exists $ENV{'LOCALAPPDATA'} ) {
     my $local_app_data = $ENV{'LOCALAPPDATA'};
     $fargo_storage_file = "$local_app_data\\$fargo_storage_file";
+    $chip_rating_storage_file = "$local_app_data\\$chip_rating_storage_file";
     $player_db = "$local_app_data\\$player_db";
     $png = "$local_app_data\\$png";
   } else {
     $fargo_storage_file = $profile . "\\desktop\\$fargo_storage_file";
+    $chip_rating_storage_file = $profile . "\\desktop\\$chip_rating_storage_file";
     $player_db = $profile . "\\desktop\\$player_db";
     $png = $profile . "\\desktop\\$png";
   }
@@ -88,6 +91,11 @@ my $game = 'none';               # Store game type (8/9/10 ball)
 my $event;                       # Store Event name (Freezer's Chip etc)
 my $shuffle_mode = 'off';        # Keep track of shuffle mode off/on
 my $send = 'none';               # Keep track of send new player to table information
+my $chips_8 = 461;
+my $chips_7 = 521;
+my $chips_6 = 581;
+my $chips_5 = 641;
+my $chips_4 = 1001;
 if ( $windows_ver =~ /Version 10/  ) {
   $Colors = 'on';
 } else {
@@ -806,9 +814,14 @@ sub new_player {
     } 
   }
 
-  print "Number of chips:\n";
+  my $potential_chips = get_start_chips($fargo);
+
+  print "Number of chips [$potential_chips]:\n";
   print color('bold cyan') unless ( $Colors eq 'off');
   chomp(my $chips = <STDIN>);
+  if (( $potential_chips > 1 ) and ( $chips eq "" )) {
+    $chips = $potential_chips;
+  }
   print color('bold white') unless ( $Colors eq 'off');
   if ( $chips !~ /^\d+\z/ ) {
     print "Chips must be a number.\n";
@@ -906,9 +919,14 @@ sub new_player_from_db {
     return;
   }
 
-  print "\nNumber of chips:\n";
+  my $potential_chips = get_start_chips($fargo);
+
+  print "Number of chips [$potential_chips]:\n";
   print color('bold cyan') unless ( $Colors eq 'off');
   chomp(my $chips = <STDIN>);
+  if (( $potential_chips > 1 ) and ( $chips eq "" )) {
+    $chips = $potential_chips;
+  }
   print color('bold white') unless ( $Colors eq 'off');
   if ( $chips !~ /^\d+\z/ ) {
     print "Chips must be a number.\n";
@@ -1348,12 +1366,13 @@ sub print_menu_array_columns {
   foreach(@array) {
     my $choice = $_;
     $num++;
-    #if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
-    #print color($color) unless ( $Colors eq 'off');
-    push @display, "$num:$choice";
+    $choice =~ s/:.*//g;
+    push @display, "$num - $choice";
   }
 
-  print columnize(\@display, {displaywidth => 120});
+  # Get width of terminal so we can see how many columns to use
+  my $cols = ((GetTerminalSize())[0]); # cols = 0; lines = 1
+  print columnize(\@display, {displaywidth => $cols});
 
   print "\n";
   $color = 'bold white';
@@ -1399,6 +1418,68 @@ sub game_and_event {
   print color('bold white') unless ( $Colors eq 'off');
   chomp($event);
   chomp($game);
+
+  my @chip_rating_storage;
+  if ( -e $chip_rating_storage_file ) {
+    open CHIP, "<$chip_rating_storage_file";
+    @chip_rating_storage = <CHIP>;
+    close CHIP;
+    $chips_8 = shift(@chip_rating_storage);
+    $chips_7 = shift(@chip_rating_storage);
+    $chips_6 = shift(@chip_rating_storage);
+    $chips_5 = shift(@chip_rating_storage);
+    $chips_4 = shift(@chip_rating_storage);
+  }
+
+  my $display8 = $chips_8 - 1;
+  my $display7 = $chips_7 - 1;
+  my $display6 = $chips_6 - 1;
+  my $display5 = $chips_5 - 1;
+  my $display4 = $chips_4 - 1;
+
+  header();
+  print "\nFargo score for eight chips [$display8]:\n";
+  print color('bold cyan') unless ( $Colors eq 'off');
+  chomp(my $chips_enter_8 = <STDIN>);
+  if ( $chips_enter_8 =~ /^\d+$/ ) {$chips_8 = $chips_enter_8 + 1}
+  print color('bold white') unless ( $Colors eq 'off');
+
+  print "Fargo score for seven chips [$display7]:\n";
+  print color('bold cyan') unless ( $Colors eq 'off');
+  chomp(my $chips_enter_7 = <STDIN>);
+  if ( $chips_enter_7 =~ /^\d+$/ ) {$chips_7 = $chips_enter_7 + 1}
+  print color('bold white') unless ( $Colors eq 'off');
+
+  print "Fargo score for six chips [$display6]:\n";
+  print color('bold cyan') unless ( $Colors eq 'off');
+  chomp(my $chips_enter_6 = <STDIN>);
+  if ( $chips_enter_6 =~ /^\d+$/ ) {$chips_6 = $chips_enter_6 + 1}
+  print color('bold white') unless ( $Colors eq 'off');
+
+  print "Fargo score for five chips [$display5]:\n";
+  print color('bold cyan') unless ( $Colors eq 'off');
+  chomp(my $chips_enter_5 = <STDIN>);
+  if ( $chips_enter_5 =~ /^\d+$/ ) {$chips_5 = $chips_enter_5 + 1}
+  print color('bold white') unless ( $Colors eq 'off');
+
+  print "Fargo score for four chips [$display4]:\n";
+  print color('bold cyan') unless ( $Colors eq 'off');
+  chomp(my $chips_enter_4 = <STDIN>);
+  if ( $chips_enter_4 =~ /^\d+$/ ) {$chips_4 = $chips_enter_4 + 1}
+  print color('bold white') unless ( $Colors eq 'off');
+
+  chomp($chips_8);
+  chomp($chips_7);
+  chomp($chips_6);
+  chomp($chips_5);
+  chomp($chips_4);
+  open CHIP, ">$chip_rating_storage_file" or return;
+  print CHIP "$chips_8\n";
+  print CHIP "$chips_7\n";
+  print CHIP "$chips_6\n";
+  print CHIP "$chips_5\n";
+  print CHIP "$chips_4";
+  close CHIP;
 }
 
 sub enter_shuffle_mode {
@@ -1447,4 +1528,16 @@ sub history {
   print "Please wait...\n";
   sleep 2;
 }
+
+sub get_start_chips {
+  my $fargo = shift;
+  my $chips = 3;
+  if ( $fargo < $chips_4 ) { $chips = 4};
+  if ( $fargo < $chips_5 ) { $chips = 5};
+  if ( $fargo < $chips_6 ) { $chips = 6};
+  if ( $fargo < $chips_7 ) { $chips = 7};
+  if ( $fargo < $chips_8 ) { $chips = 8};
+  return $chips;
+}
+
 
