@@ -1363,12 +1363,42 @@ sub print_menu_array_columns {
   my @array = @_;
   my $num = 0;
   my @display;
-  foreach(@array) {
-    my $choice = $_;
-    $num++;
-    $choice =~ s/:.*//g;
-    push @display, "$num - $choice";
+  while (1){
+    if (@array) {
+      my $one;
+      my $two;
+      my $three;
+      $num++;
+      $one = shift(@array);
+      $one = sprintf ( "%-4s %-1s %-24s", "$num", "- ","$one" );
+      #$one = "$num - $one";
+      if (@array) {
+        $two = shift(@array);
+        $num++;
+        $two = sprintf ( "%-4s %-1s %-24s", "$num", "- ","$two" );
+	#$two = "$num - $two";
+      }
+      if (@array) {
+        $three = shift(@array);
+        $num++;
+        $three = sprintf ( "%-4s %-1s %-24s", "$num", "- ","$three" );
+	#$three = "$num - $three";
+      }
+      $one   =~ s/:.*//g;
+      $two   =~ s/:.*//g;
+      $three =~ s/:.*//g;
+      my $printit = sprintf ( "%-30s %-30s %-30s", "$one", "$two", "$three" );
+      push @display,"$printit";
+    } else {
+      last;
+    }
   }
+  #foreach(@array) {
+  #  my $choice = $_;
+  #  $num++;
+  #  $choice =~ s/:.*//g;
+  #  push @display, "$num - $choice";
+  #}
 
   # Get width of terminal so we can see how many columns to use
   my $cols = ((GetTerminalSize())[0]); # cols = 0; lines = 1
