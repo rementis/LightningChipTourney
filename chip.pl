@@ -8,6 +8,8 @@
 #                         #
 # Add move table Aug 2018 #
 #                         #
+# Add player db Oct 2018  #
+#                         #
 ###########################
 
 use strict;
@@ -15,7 +17,6 @@ use Term::ReadKey;
 use List::Util 'shuffle';
 use Term::ANSIColor;
 use POSIX;
-#use Array::Columnize;
 $SIG{INT} = 'IGNORE';
 
 # Get current date
@@ -1359,6 +1360,7 @@ sub print_menu_array {
   return $numselection;
 }
 
+# Ugly hacky, but you need more data on the screen at once
 sub print_menu_array_columns {
   my @array = @_;
   my $num = 0;
@@ -1371,18 +1373,15 @@ sub print_menu_array_columns {
       $num++;
       $one = shift(@array);
       $one = sprintf ( "%-4s %-1s %-24s", "$num", "- ","$one" );
-      #$one = "$num - $one";
       if (@array) {
         $two = shift(@array);
         $num++;
         $two = sprintf ( "%-4s %-1s %-24s", "$num", "- ","$two" );
-	#$two = "$num - $two";
       }
       if (@array) {
         $three = shift(@array);
         $num++;
         $three = sprintf ( "%-4s %-1s %-24s", "$num", "- ","$three" );
-	#$three = "$num - $three";
       }
       $one   =~ s/:.*//g;
       $two   =~ s/:.*//g;
@@ -1393,16 +1392,7 @@ sub print_menu_array_columns {
       last;
     }
   }
-  #foreach(@array) {
-  #  my $choice = $_;
-  #  $num++;
-  #  $choice =~ s/:.*//g;
-  #  push @display, "$num - $choice";
-  #}
 
-  # Get width of terminal so we can see how many columns to use
-  my $cols = ((GetTerminalSize())[0]); # cols = 0; lines = 1
-  #print columnize(\@display, {displaywidth => $cols});
   foreach(@display) {
     print "$_\n";
   }
