@@ -15,7 +15,7 @@ use Term::ReadKey;
 use List::Util 'shuffle';
 use Term::ANSIColor;
 use POSIX;
-use Array::Columnize;
+#use Array::Columnize;
 $SIG{INT} = 'IGNORE';
 
 # Get current date
@@ -1372,7 +1372,10 @@ sub print_menu_array_columns {
 
   # Get width of terminal so we can see how many columns to use
   my $cols = ((GetTerminalSize())[0]); # cols = 0; lines = 1
-  print columnize(\@display, {displaywidth => $cols});
+  #print columnize(\@display, {displaywidth => $cols});
+  foreach(@display) {
+    print "$_\n";
+  }
 
   print "\n";
   $color = 'bold white';
@@ -1438,31 +1441,32 @@ sub game_and_event {
   my $display4 = $chips_4 - 1;
 
   header();
-  print "\nFargo score for eight chips [$display8]:\n";
+  print "\n";
+  print "Fargo score for eight chips   [$display8]:\n";
   print color('bold cyan') unless ( $Colors eq 'off');
   chomp(my $chips_enter_8 = <STDIN>);
   if ( $chips_enter_8 =~ /^\d+$/ ) {$chips_8 = $chips_enter_8 + 1}
   print color('bold white') unless ( $Colors eq 'off');
 
-  print "Fargo score for seven chips [$display7]:\n";
+  print "Fargo score for seven chips   [$display7]:\n";
   print color('bold cyan') unless ( $Colors eq 'off');
   chomp(my $chips_enter_7 = <STDIN>);
   if ( $chips_enter_7 =~ /^\d+$/ ) {$chips_7 = $chips_enter_7 + 1}
   print color('bold white') unless ( $Colors eq 'off');
 
-  print "Fargo score for six chips [$display6]:\n";
+  print "Fargo score for six chips     [$display6]:\n";
   print color('bold cyan') unless ( $Colors eq 'off');
   chomp(my $chips_enter_6 = <STDIN>);
   if ( $chips_enter_6 =~ /^\d+$/ ) {$chips_6 = $chips_enter_6 + 1}
   print color('bold white') unless ( $Colors eq 'off');
 
-  print "Fargo score for five chips [$display5]:\n";
+  print "Fargo score for five chips    [$display5]:\n";
   print color('bold cyan') unless ( $Colors eq 'off');
   chomp(my $chips_enter_5 = <STDIN>);
   if ( $chips_enter_5 =~ /^\d+$/ ) {$chips_5 = $chips_enter_5 + 1}
   print color('bold white') unless ( $Colors eq 'off');
 
-  print "Fargo score for four chips [$display4]:\n";
+  print "Fargo score for four chips    [$display4]:\n";
   print color('bold cyan') unless ( $Colors eq 'off');
   chomp(my $chips_enter_4 = <STDIN>);
   if ( $chips_enter_4 =~ /^\d+$/ ) {$chips_4 = $chips_enter_4 + 1}
