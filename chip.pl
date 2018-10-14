@@ -379,43 +379,43 @@ sub draw_screen {
     #print "(n)ew player (d)elete player (a)dd table (r)emove table (g)ive chip (t)ake chip (q)uit program (b)egin tourney!\n";
     print "(";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "n";
+    print "N";
     print color('bold white') unless ( $Colors eq 'off');
     print ")ew player (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "d";
+    print "D";
     print color('bold white') unless ( $Colors eq 'off');
     print ")elete player (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "a";
+    print "A";
     print color('bold white') unless ( $Colors eq 'off');
     print ")dd table (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "r";
+    print "R";
     print color('bold white') unless ( $Colors eq 'off');
     print ")emove table\n(";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "g";
+    print "G";
     print color('bold white') unless ( $Colors eq 'off');
     print ")ive chip (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "t";
+    print "T";
     print color('bold white') unless ( $Colors eq 'off');
     print ")ake chip (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "p";
+    print "P";
     print color('bold white') unless ( $Colors eq 'off');
     print ")layer from db (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "q";
+    print "Q";
     print color('bold white') unless ( $Colors eq 'off');
     print ")uit program (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "c";
+    print "C";
     print color('bold white') unless ( $Colors eq 'off');
     print ")olors (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "b";
+    print "B";
     print color('bold white') unless ( $Colors eq 'off');
     print ")egin tourney!\n";
   }
@@ -424,55 +424,55 @@ sub draw_screen {
     #print "(l)oser (n)ew player (d)elete player (r)emove table (a)dd table (g)ive chip (t)ake chip (q)uit program\n";
     print "(";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "l";
+    print "L";
     print color('bold white') unless ( $Colors eq 'off');
     print ")oser (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "n";
+    print "N";
     print color('bold white') unless ( $Colors eq 'off');
     print ")ew player (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "d";
+    print "D";
     print color('bold white') unless ( $Colors eq 'off');
     print ")elete player (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "a";
+    print "A";
     print color('bold white') unless ( $Colors eq 'off');
     print ")dd table (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "r";
+    print "R";
     print color('bold white') unless ( $Colors eq 'off');
     print ")emove table (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "h";
+    print "H";
     print color('bold white') unless ( $Colors eq 'off');
     print ")istory\n(";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "g";
+    print "G";
     print color('bold white') unless ( $Colors eq 'off');
     print ")ive chip (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "t";
+    print "T";
     print color('bold white') unless ( $Colors eq 'off');
     print ")ake chip (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "p";
+    print "P";
     print color('bold white') unless ( $Colors eq 'off');
     print ")layer from db (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "c";
+    print "C";
     print color('bold white') unless ( $Colors eq 'off');
     print ")olors (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "m";
+    print "M";
     print color('bold white') unless ( $Colors eq 'off');
     print ")ove player (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "s";
+    print "S";
     print color('bold white') unless ( $Colors eq 'off');
     print ")huffle (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "e";
+    print "E";
     print color('bold white') unless ( $Colors eq 'off');
     if ( $shuffle_mode eq 'off' ) {
       print ")nter shuffle mode (";
@@ -949,6 +949,10 @@ sub new_player_from_db {
   if ( $tourney_running eq 1 ) {
     unshift @stack, $name;
   }
+  open DB, ">$player_db" or return;
+  foreach(@db){
+    print DB "$_\n";
+  }
 }
     
 
@@ -1296,23 +1300,11 @@ sub header {
   my @players = keys(%players);
   my $count_players = @players;
 
-  if ( ( $tourney_running eq 0 ) and ( $Colors eq 'on'  ) ) { print colored("\nLIGHTNING CHIP TOURNEY                               $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n" }
-
-  if ( ( $tourney_running eq 0 ) and ( $Colors eq 'off' ) ) { print "\nLIGHTNING CHIP TOURNEY                               $TIME              --by Martin Colello\n\n\n" }
-
-  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'off' ) ) { 
+  if ( $Colors eq 'on' ) { 
     print colored("\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n";
-  } elsif ( ( $tourney_running eq 1 ) and ( $Colors eq 'on' ) and ( $shuffle_mode eq 'on' ) )  {
-    print colored("\nLIGHTNING CHIP TOURNEY   SHUFFLE       Players: $number_of_players      $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n";
-  }
-
-
-  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'off' ) ) { 
-    print "\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello\n\n\n";
-  } elsif ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'on' ) )  {
+  } elsif ( $Colors eq 'off' ) {
     print "\nLIGHTNING CHIP TOURNEY   SHUFFLE       Players: $number_of_players      $TIME              --by Martin Colello\n\n\n";
   }
-
 
   print color('bold white') unless ( $Colors eq 'off');
 }
