@@ -389,19 +389,23 @@ sub draw_screen {
     print color('bold yellow') unless ( $Colors eq 'off');
     print "A";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")dd table (";
+    print ")dd table      (";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "R";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")emove table\n(";
+    print ")emove table (";
+    print color('bold yellow') unless ( $Colors eq 'off');
+    print "C";
+    print color('bold white') unless ( $Colors eq 'off');
+    print ")olors\n(";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "G";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")ive chip (";
+    print ")ive chip  (";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "T";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")ake chip (";
+    print ")ake chip     (";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "P";
     print color('bold white') unless ( $Colors eq 'off');
@@ -410,10 +414,6 @@ sub draw_screen {
     print "Q";
     print color('bold white') unless ( $Colors eq 'off');
     print ")uit program (";
-    print color('bold yellow') unless ( $Colors eq 'off');
-    print "C";
-    print color('bold white') unless ( $Colors eq 'off');
-    print ")olors (";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "B";
     print color('bold white') unless ( $Colors eq 'off');
@@ -426,7 +426,7 @@ sub draw_screen {
     print color('bold yellow') unless ( $Colors eq 'off');
     print "L";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")oser (";
+    print ")oser     (";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "N";
     print color('bold white') unless ( $Colors eq 'off');
@@ -434,7 +434,7 @@ sub draw_screen {
     print color('bold yellow') unless ( $Colors eq 'off');
     print "D";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")elete player (";
+    print ")elete player  (";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "A";
     print color('bold white') unless ( $Colors eq 'off');
@@ -446,7 +446,11 @@ sub draw_screen {
     print color('bold yellow') unless ( $Colors eq 'off');
     print "H";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")istory\n(";
+    print ")istory (";
+    print color('bold yellow') unless ( $Colors eq 'off');
+    print "Q";
+    print color('bold white') unless ( $Colors eq 'off');
+    print ")uit\n(";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "G";
     print color('bold white') unless ( $Colors eq 'off');
@@ -454,7 +458,7 @@ sub draw_screen {
     print color('bold yellow') unless ( $Colors eq 'off');
     print "T";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")ake chip (";
+    print ")ake chip  (";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "P";
     print color('bold white') unless ( $Colors eq 'off');
@@ -462,11 +466,11 @@ sub draw_screen {
     print color('bold yellow') unless ( $Colors eq 'off');
     print "C";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")olors (";
+    print ")olors    (";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "M";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")ove player (";
+    print ")ove player  (";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "S";
     print color('bold white') unless ( $Colors eq 'off');
@@ -475,14 +479,10 @@ sub draw_screen {
     print "E";
     print color('bold white') unless ( $Colors eq 'off');
     if ( $shuffle_mode eq 'off' ) {
-      print ")nter shuffle mode (";
+      print ")nter shuffle mode \n";
     } else {
-      print ")xit shuffle mode (";
+      print ")xit shuffle mode \n";
     }
-    print color('bold yellow') unless ( $Colors eq 'off');
-    print "q";
-    print color('bold white') unless ( $Colors eq 'off');
-    print ")uit\n";
 
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
     my $ampm = 'AM';
@@ -500,7 +500,7 @@ sub draw_screen {
     my @count_players = keys(%players);
     my $count_players = @count_players;
     if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'on' ) )  {
-      print colored("\n\nSHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE", 'bright_yellow on_red'), "\n\n\n";
+      print colored("\n\n      SHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE      ", 'bright_yellow on_red'), "\n\n\n";
     }
     if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'on' ) )  {
       print "\n\nSHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE\n";
@@ -1300,10 +1300,18 @@ sub header {
   my @players = keys(%players);
   my $count_players = @players;
 
-  if ( $Colors eq 'on' ) { 
-    print colored("\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello", 'bright_yellow on_red'), "\n\n\n";
-  } elsif ( $Colors eq 'off' ) {
-    print "\nLIGHTNING CHIP TOURNEY   SHUFFLE       Players: $number_of_players      $TIME              --by Martin Colello\n\n\n";
+  if ( $shuffle_mode eq 'off' ) {
+    if ( $Colors eq 'on' ) { 
+      print colored("\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+    } elsif ( $Colors eq 'off' ) {
+      print "\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello\n\n\n";
+    }
+  } else {
+    if ( $Colors eq 'on' ) { 
+      print colored("\nLIGHTNING CHIP TOURNEY     SHUFFLE     Players: $number_of_players      $TIME              --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
+    } elsif ( $Colors eq 'off' ) {
+      print "\nLIGHTNING CHIP TOURNEY      SHUFFLE    Players: $number_of_players      $TIME              --by Martin Colello\n\n\n";
+    }
   }
 
   print color('bold white') unless ( $Colors eq 'off');
@@ -1454,6 +1462,8 @@ sub game_and_event {
 
   header();
   print "\n";
+  print "FARGO SETUP\n\n";
+  print "Simply hit enter for each level if you wish to use default settings.\n\n";
   print "Fargo score for eight chips   [$display8]:\n";
   print color('bold cyan') unless ( $Colors eq 'off');
   chomp(my $chips_enter_8 = <STDIN>);
@@ -1555,5 +1565,3 @@ sub get_start_chips {
   if ( $fargo < $chips_8 ) { $chips = 8};
   return $chips;
 }
-
-
