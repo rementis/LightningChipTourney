@@ -35,7 +35,7 @@ my $player_db = 'chip_player.txt';
 my $desktop     = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
 my $desktop_csv = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
 my $windows_ver = 'none';
-my $png = 'Lightning.png';
+#my $png = 'Lightning.png';
 
 if ( $^O =~ /MSWin32/ ) {
   chomp(my $profile = `set userprofile`);
@@ -47,21 +47,21 @@ if ( $^O =~ /MSWin32/ ) {
     $fargo_storage_file = "$local_app_data\\$fargo_storage_file";
     $chip_rating_storage_file = "$local_app_data\\$chip_rating_storage_file";
     $player_db = "$local_app_data\\$player_db";
-    $png = "$local_app_data\\$png";
+    #$png = "$local_app_data\\$png";
   } else {
     $fargo_storage_file = $profile . "\\desktop\\$fargo_storage_file";
     $chip_rating_storage_file = $profile . "\\desktop\\$chip_rating_storage_file";
     $player_db = $profile . "\\desktop\\$player_db";
-    $png = $profile . "\\desktop\\$png";
+    #$png = $profile . "\\desktop\\$png";
   }
   $windows_ver = `ver`;
 }
 
 # Display logo
-if ( -e $png ) {
-  if ( $^O =~ /MSWin32/     ) { system("start $png") }
-  if ( $^O =~ /next|darwin/ ) { system("open $png") }
-}
+#if ( -e $png ) {
+#  if ( $^O =~ /MSWin32/     ) { system("start $png") }
+#  if ( $^O =~ /next|darwin/ ) { system("open $png") }
+#}
 
 # Hold state of screen in case we need to exit program
 my $screen_contents;
@@ -97,11 +97,11 @@ my $chips_7 = 521;
 my $chips_6 = 581;
 my $chips_5 = 641;
 my $chips_4 = 1001;
-if ( $windows_ver =~ /Version 10/  ) {
-  $Colors = 'on';
-} else {
-  $Colors = 'off';
-}
+#if ( $windows_ver =~ /Version 10/  ) {
+#  $Colors = 'on';
+#} else {
+#  $Colors = 'off';
+#}
 
 print color($color) unless ( $Colors eq 'off');
 
@@ -143,7 +143,8 @@ print "| |___| | (_| | | | | |_| | | | | | | | (_| | | |___| | | | | |_)|\n";
 print "|_____|_|\\__, |_| |_|\\__|_| |_|_|_| |_|\\__, |  \\____|_| |_|_| .__/ \n";
 print "         |___/                         |___/                |_|    \n\n\n\n\n\n";
 print "                                           --by Martin Colello\n";
-yesorno('any');
+#yesorno('any');
+sleep 2;
 
 game_and_event();
 
@@ -771,7 +772,7 @@ sub new_player {
   chomp(my $fargo = <STDIN>);
   print color('bold white') unless ( $Colors eq 'off');
   if ( $fargo !~ /^\d+\z/ ) {
-    $fargo = 0;;
+    $fargo = 100;
   }
 
   my $name_lower = lc($name);
@@ -910,7 +911,7 @@ sub new_player_from_db {
   chomp(my $fargo = <STDIN>);
   print color('bold white') unless ( $Colors eq 'off');
   if ( $fargo !~ /^\d+\z/ ) {
-    $fargo = 0;;
+    $fargo = 100;;
   }
 
   $name = "$name ($fargo)";
@@ -1428,11 +1429,15 @@ sub switch_colors {
 }
 
 sub game_and_event {
-  header();
-  print "Please enter Event Name:\n";
-  print "\nExample: Freezer's Lightning Nine Ball Chip Tourney\n\n";
-  print color('bold cyan') unless ( $Colors eq 'off');
-  chomp($event = <STDIN>);
+  while(1){
+    header();
+    print "Please enter Event Name:\n";
+    print "\nExample: Freezer's Lightning Nine Ball Chip Tourney\n\n";
+    print color('bold cyan') unless ( $Colors eq 'off');
+    chomp($event = <STDIN>);
+    if ($event =~ /\w/ ) { last }
+  }
+
   print color('bold white') unless ( $Colors eq 'off');
   print "\n\nPlease enter game type:\n";
   print "\nExample: Nine Ball\n\n";
