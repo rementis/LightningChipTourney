@@ -35,7 +35,6 @@ my $player_db = 'chip_player.txt';
 my $desktop     = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
 my $desktop_csv = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
 my $windows_ver = 'none';
-#my $png = 'Lightning.png';
 
 if ( $^O =~ /MSWin32/ ) {
   chomp(my $profile = `set userprofile`);
@@ -47,21 +46,13 @@ if ( $^O =~ /MSWin32/ ) {
     $fargo_storage_file = "$local_app_data\\$fargo_storage_file";
     $chip_rating_storage_file = "$local_app_data\\$chip_rating_storage_file";
     $player_db = "$local_app_data\\$player_db";
-    #$png = "$local_app_data\\$png";
   } else {
     $fargo_storage_file = $profile . "\\desktop\\$fargo_storage_file";
     $chip_rating_storage_file = $profile . "\\desktop\\$chip_rating_storage_file";
     $player_db = $profile . "\\desktop\\$player_db";
-    #$png = $profile . "\\desktop\\$png";
   }
   $windows_ver = `ver`;
 }
-
-# Display logo
-#if ( -e $png ) {
-#  if ( $^O =~ /MSWin32/     ) { system("start $png") }
-#  if ( $^O =~ /next|darwin/ ) { system("open $png") }
-#}
 
 # Hold state of screen in case we need to exit program
 my $screen_contents;
@@ -97,17 +88,12 @@ my $chips_7 = 521;
 my $chips_6 = 581;
 my $chips_5 = 641;
 my $chips_4 = 1001;
-#if ( $windows_ver =~ /Version 10/  ) {
-#  $Colors = 'on';
-#} else {
-#  $Colors = 'off';
-#}
 
 print color($color) unless ( $Colors eq 'off');
 
 # Set the size of the console
 if ( $^O =~ /MSWin32/ ) {
-  system("mode con lines=60 cols=120");
+  system("mode con lines=60 cols=140");
 }
 if ( $^O =~ /darwin/ ) {
   system("osascript -e 'tell app \"Terminal\" to set background color of first window to {0, 0, 0, -16373}'");
@@ -1407,11 +1393,18 @@ sub print_menu_array_columns {
     }
   }
 
+  my $num_display = 0;
   foreach(@display) {
+    $num_display++;
+    if ( $num_display / 45 == 1 ) {
+      print "Hit ENTER to continue.\n";
+      my $continue = <STDIN>;
+    }
     print "$_\n";
   }
 
   print "\n";
+  print "Enter number of selection: ";
   $color = 'bold white';
   print color($color) unless ( $Colors eq 'off');
   my $numselection = <STDIN>;
