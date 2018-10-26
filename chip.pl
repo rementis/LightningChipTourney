@@ -28,7 +28,7 @@ $year = $year + 1900;
 my @abbr = qw(January February March April May June July August September October November December);
 my $DATE = "$hour".':'."$min".":$sec"."_$abbr[$mon]"."_$mday"."_$year";
 
-# Set output file to user's Desktop
+# Set files
 my $fargo_storage_file = 'fargo.txt';
 my $chip_rating_storage_file = 'chip_rating.txt';
 my $player_db = 'chip_player.txt';
@@ -206,6 +206,7 @@ while(1) {
       $done = 1 if $choice eq 'N';
       $done = 1 if $choice eq 'A';
       $done = 1 if $choice eq 'D';
+      $done = 1 if $choice eq 'I';
       $done = 1 if $choice eq 'G';
       $done = 1 if $choice eq 'R';
       $done = 1 if $choice eq 'T';
@@ -241,6 +242,7 @@ while(1) {
   if ( $choice eq 'M'  ) { move_player()        }
   if ( $choice eq 'H'  ) { history()            }
   if ( $choice eq 'P'  ) { new_player_from_db() }
+  if ( $choice eq 'I'  ) { edit_player_db()     }
 
 }# End of MAIN LOOP
 
@@ -418,7 +420,11 @@ sub draw_screen {
     print color('bold yellow') unless ( $Colors eq 'off');
     print "B";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")egin tourney!\n";
+    print ")egin tourney! Ed(";
+    print color('bold yellow') unless ( $Colors eq 'off');
+    print "i";
+    print color('bold white') unless ( $Colors eq 'off');
+    print ")t player db\n";
   }
   # Print menu
   if ( $tourney_running eq 1 ) {
@@ -1569,4 +1575,11 @@ sub get_start_chips {
   if ( $fargo < $chips_7 ) { $chips = 7};
   if ( $fargo < $chips_8 ) { $chips = 8};
   return $chips;
+}
+
+sub edit_player_db {
+  print "Opening player database...\n";
+  sleep 3;
+  if ( $^O =~ /MSWin32/     ) { system("start notepad.exe $player_db") }
+  if ( $^O =~ /next|darwin/ ) { system("open $player_db") }
 }
