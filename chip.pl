@@ -1377,6 +1377,7 @@ sub print_menu_array_columns {
       my $one;
       my $two;
       my $three;
+      my $four;
       $num++;
       $one = shift(@array);
       $one = sprintf ( "%-4s %-1s %-24s", "$num", "- ","$one" );
@@ -1390,10 +1391,16 @@ sub print_menu_array_columns {
         $num++;
         $three = sprintf ( "%-4s %-1s %-24s", "$num", "- ","$three" );
       }
+      if (@array) {
+        $four = shift(@array);
+        $num++;
+        $four = sprintf ( "%-4s %-1s %-24s", "$num", "- ","$four" );
+      }
       $one   =~ s/:.*//g;
       $two   =~ s/:.*//g;
       $three =~ s/:.*//g;
-      my $printit = sprintf ( "%-30s %-30s %-30s", "$one", "$two", "$three" );
+      $four  =~ s/:.*//g;
+      my $printit = sprintf ( "%-30s %-30s %-30s %-30s", "$one", "$two", "$three","$four" );
       push @display,"$printit";
     } else {
       last;
