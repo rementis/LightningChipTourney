@@ -1578,7 +1578,9 @@ sub get_start_chips {
 }
 
 sub edit_player_db {
-  print "Opening player database...\n";
+  print color('bold green') unless ( $Colors eq 'off');
+  print "\n\nOpening player database...\n";
+  print color('bold white') unless ( $Colors eq 'off');
   sleep 3;
   if ( $^O =~ /MSWin32/     ) { system("start notepad.exe $player_db") }
   if ( $^O =~ /next|darwin/ ) { system("open $player_db") }
