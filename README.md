@@ -13,6 +13,8 @@ The list of players is randomized and then the matchups begin.
 Each race is only one game, loser loses a chip.  When you
 are out of chips you are out of the tournament.
 
+When there are just a few players left the tournament will enter Shuffle Mode.  In this mode you will need to manually re-suffle periodically after the matches.  
+
 If you have Fargo scores the software can also keep track so the
 scores can be entered.  If you are not using Fargo just enter
 anything you like for the Fargo number.
