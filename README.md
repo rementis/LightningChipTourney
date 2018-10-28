@@ -1,6 +1,6 @@
 Lightning Chip Tourney           --by Martin Colello
 
-For Windows older than version 10 you can hit the 'C' key to turn colors off if you find they are not working properly.
+You can hit the 'C' key to turn colors off if you prefer.
 
 Using this software you can run a billiards tournament
 in "chip" format.
