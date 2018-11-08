@@ -524,6 +524,13 @@ sub loser {
     }
   }
 
+  my $count_active_players = @active_players;
+  if ( $count_active_players == 0 ) {
+    print "\nNo players are at a table.\n";
+    sleep 2;
+    return;
+  }
+
   my $numselection = print_menu_array(@active_players);  
   if ( $numselection == 1000 ) {
     return;
@@ -951,6 +958,7 @@ sub new_player_from_db {
 
 sub delete_player {
 
+  header();
 
   my @players = keys(%players);
   @players = sort(@players);
@@ -1221,9 +1229,9 @@ sub delete_players {
   @players = sort(@players);
   foreach(@players){
     my $player = $_;
-    if ( $players{$player}{'chips'} eq 0 ) {
+    if ( ($players{$player}{'chips'} eq 0) or ($player !~ /\w/) ) {
       # Add player to dead player array
-      push @dead, "$player: $players{$player}{'won'}";
+      push @dead, "$player: $players{$player}{'won'}" unless ( $player !~ /\w/ );
 
       # Delete the player
       delete $players{$player}{'chips'};
@@ -1239,7 +1247,8 @@ sub delete_players {
         }
         push @new_stack, $line;
       }
-      @stack = @new_stack;     delete $players{$player};
+      @stack = @new_stack;     
+      delete $players{$player};
       }
   }
 }
