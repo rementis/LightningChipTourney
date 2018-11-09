@@ -249,7 +249,7 @@ sub draw_screen {
 
   header();
 
-  print color('bold white') unless ( $Colors eq 'off');;
+  print color('bold yellow') unless ( $Colors eq 'off');;
   if ( $number_of_players > 0 ) {
     print "Player:                        Won:       Chips:     Table:\n\n";
   }
