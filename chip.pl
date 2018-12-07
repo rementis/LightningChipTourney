@@ -1405,7 +1405,7 @@ sub print_menu_array_columns {
   my $num_display = 0;
   foreach(@display) {
     $num_display++;
-    if ( $num_display / 45 == 1 ) {
+    if ( $num_display / 28 == 1 ) {
       print "Hit ENTER to continue.\n";
       my $continue = <STDIN>;
     }
