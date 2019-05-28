@@ -10,6 +10,10 @@
 #                         #
 # Add player db Oct 2018  #
 #                         #
+# Auto shuffle when only  #
+# two players left        #
+# May 2019                #
+#                         #
 ###########################
 
 use strict;
@@ -514,6 +518,7 @@ sub loser {
   # Get list of players from hash, and sort them
   my @players = keys(%players);
   @players = sort(@players);
+  my $count_players = @players;
   
   print "\n\n\n\nPlease choose number of player who lost:\n\n";
   my @active_players;
@@ -634,6 +639,10 @@ sub loser {
     if ( $shuffle_mode eq 'on' ) {
       $players{$opponent}{'table'} = 'none';
     }
+
+  if ( $count_players eq 2 ) {
+    shuffle_stack('AUTO');
+  }
 }
 
 sub start_tourney {
@@ -1202,10 +1211,16 @@ sub clear_screen {
 
 sub shuffle_stack {
   header();
-  print "\n\n\n\n\nThis will reshuffle ALL players including at current tables!!!\n";
-  print "Are you sure?\n";
-  my $yesorno = yesorno();
-  chomp($yesorno);
+  my $check_if_auto=shift;
+  my $yesorno;
+  if ( $check_if_auto ne 'AUTO' ) {
+    print "\n\n\n\n\nThis will reshuffle ALL players including at current tables!!!\n";
+    print "Are you sure?\n";
+    $yesorno = yesorno();
+    chomp($yesorno);
+  } else {
+    $yesorno = 'y';
+  }
   if ( $yesorno eq 'y' ) {
     @stack = keys(%players);
     @stack = shuffle(@stack);
@@ -1219,8 +1234,10 @@ sub shuffle_stack {
     # Assign two players per table from the stack
     assign();
 
-    print "Shuffled.\n";
-    sleep 1;
+    if ( $check_if_auto ne 'AUTO' ) {
+      print "Shuffled.\n";
+      sleep 1;
+    }
   }
 }
 
