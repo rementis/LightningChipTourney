@@ -20,3 +20,5 @@ scores can be entered.  If you are not using Fargo just enter
 anything you like for the Fargo number.
 
 Lightning Chip Tourney has a built in database which keeps track of players previously entered, as well as their Fargo ID.  It also has the ability to automatically assign a chip count based on Fargo score.
+
+Latest update May 2019, when tourney is down to two people no manual shuffle is necessary to start the next game.
