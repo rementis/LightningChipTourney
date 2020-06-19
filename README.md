@@ -1,5 +1,7 @@
 Lightning Chip Tourney           --by Martin Colello
 
+Now version 6.0 with Undo option!
+
 You can hit the 'C' key to turn colors off if you prefer.
 
 Using this software you can run a billiards tournament
