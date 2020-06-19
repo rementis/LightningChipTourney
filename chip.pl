@@ -14,6 +14,10 @@
 # two players left        #
 # May 2019                #
 #                         #
+# Add ability to undo     #
+# most recent win         #
+# June 2020               #
+#                         #
 ###########################
 
 use strict;
@@ -21,6 +25,7 @@ use Term::ReadKey;
 use List::Util 'shuffle';
 use Term::ANSIColor;
 use POSIX;
+use Storable qw/dclone/;
 $SIG{INT} = 'IGNORE';
 
 # Get current date
@@ -35,7 +40,8 @@ my $DATE = "$hour".':'."$min".":$sec"."_$abbr[$mon]"."_$mday"."_$year";
 # Set files
 my $fargo_storage_file = 'fargo.txt';
 my $chip_rating_storage_file = 'chip_rating.txt';
-my $player_db = 'chip_player.txt';
+my $player_db   = 'chip_player.txt';
+my $namestxt    = 'names.txt';
 my $desktop     = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
 my $desktop_csv = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
 my $windows_ver = 'none';
@@ -50,6 +56,7 @@ if ( $^O =~ /MSWin32/ ) {
     $fargo_storage_file = "$local_app_data\\$fargo_storage_file";
     $chip_rating_storage_file = "$local_app_data\\$chip_rating_storage_file";
     $player_db = "$local_app_data\\$player_db";
+    $namestxt  = "$local_app_data\\$namestxt";
   } else {
     $fargo_storage_file = $profile . "\\desktop\\$fargo_storage_file";
     $chip_rating_storage_file = $profile . "\\desktop\\$chip_rating_storage_file";
@@ -82,11 +89,23 @@ my @whobeat;                     # Record who beat who
 my @whobeat_csv;                 # Record who beat who for spreadsheet
 my $Colors = 'on';               # Keep track if user wants color display turned off
 my $most_recent_loser = 'none';  # Keep track of who lost recently for stack manipulation
+my $most_recent_table = 'none';  # Keep track table for undo
 my $most_recent_winner = 'none'; # Keep track of who lost recently for stack manipulation
+my $player_standup = 'none';     # For undo tracking
 my $game = 'none';               # Store game type (8/9/10 ball)
 my $event;                       # Store Event name (Freezer's Chip etc)
 my $shuffle_mode = 'off';        # Keep track of shuffle mode off/on
 my $send = 'none';               # Keep track of send new player to table information
+my $undo_fargo_id;
+my $undo_won;
+my $undo_chips;
+my $shuffle_mode_undo = 'off';
+my %backup_players;
+my %backup_tables;
+my @backup_dead;
+my @backup_stack;
+my @backup_whobeat;
+my @backup_whobeatcsv;
 my $chips_8 = 461;
 my $chips_7 = 521;
 my $chips_6 = 581;
@@ -106,8 +125,8 @@ if ( $^O =~ /darwin/ ) {
 }
 
 # If names.txt exits populate the tourney with sample data
-if ( -e 'names.txt' ) {
-  my $filename = 'names.txt';
+if ( -e $namestxt ) {
+  my $filename = $namestxt;
   open my $handle, '<', $filename;
   my @names = <$handle>;
   close $handle;
@@ -207,6 +226,7 @@ while(1) {
         $done = 1 if $choice eq 'H';
         $done = 1 if $choice eq 'L';
         $done = 1 if $choice eq 'S';
+        $done = 1 if $choice eq 'U';
         $done = 1 if $choice eq 'E';
       }
       if ( $tourney_running eq 0 ) {
@@ -233,6 +253,7 @@ while(1) {
   if ( $choice eq 'H'  ) { history()            }
   if ( $choice eq 'P'  ) { new_player_from_db() }
   if ( $choice eq 'I'  ) { edit_player_db()     }
+  if ( $choice eq 'U'  ) { undo_last_loser()    }
 
 }# End of MAIN LOOP
 
@@ -447,7 +468,11 @@ sub draw_screen {
     print color('bold yellow') unless ( $Colors eq 'off');
     print "Q";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")uit\n(";
+    print ")uit (";
+    print color('bold yellow') unless ( $Colors eq 'off');
+    print "U";
+    print color('bold white') unless ( $Colors eq 'off');
+    print ")undo\n(";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "G";
     print color('bold white') unless ( $Colors eq 'off');
@@ -511,6 +536,10 @@ sub draw_screen {
 }
 
 sub loser {
+
+  # Take backup of status in case we want to undo
+  backup();
+
   # Actions to take when selecting a loser
 
   header();
@@ -555,6 +584,7 @@ sub loser {
 
     # Get table number player lost on
     my $table = $players{$player}{'table'};
+    $most_recent_table = $table;
 
     # Set loser's table to 'none'
     $players{$player}{'table'} = 'none';
@@ -626,8 +656,9 @@ sub loser {
 
         if ( exists( $players{$standup} ) and ( $players{$standup}{'table'} eq 'none' ) ) { 
           $players{$standup}{'table'} = $table;
+	  $player_standup = $standup;
           header();
-	  $send = "\n\nSend $standup to table $table\n";
+	  $send      = "\n\nSend $standup to table $table\n";
           last;
         }
       }
@@ -643,6 +674,33 @@ sub loser {
   if ( $count_players eq 2 ) {
     shuffle_stack('AUTO');
   }
+}
+
+sub undo_last_loser {
+  # Undo last loser
+  
+  print "\nUndo Last Action\n\n";
+  print "Are you sure?\n";
+  my $yesorno = yesorno();
+  chomp($yesorno);
+  $yesorno=lc($yesorno);
+  if ( $yesorno ne 'y' ) { 
+    print "Action cancelled.\n";
+    sleep 2;
+    return;
+  }
+
+  print "Reverting...\n";
+  %players      = %{ dclone \%backup_players};
+  %tables       = %{ dclone \%backup_tables};
+  @dead         = @{ dclone \@backup_dead};
+  @stack        = @{ dclone \@backup_stack};
+  @whobeat      = @{ dclone \@backup_whobeat};
+  @whobeat_csv  = @{ dclone \@backup_whobeatcsv};
+  $shuffle_mode = $shuffle_mode_undo;
+  sleep 2;
+
+  $send = "\n\n";
 }
 
 sub start_tourney {
@@ -691,6 +749,10 @@ sub start_tourney {
 }
 
 sub new_table {
+
+  # Take backup of status in case we want to undo
+  backup();
+
   header();
   my @tables = keys(%tables);
   chomp(@tables);
@@ -743,6 +805,10 @@ sub new_table {
 }
 
 sub new_player {
+
+  # Take backup of status in case we want to undo
+  backup();
+
   header();
 
   my %fargo_id;
@@ -797,7 +863,7 @@ sub new_player {
   }
 
   if ( $potential_fargo_id == 0 ) {
-    print "Fargo ID Number:\n";
+    print "Fargo ID Number: (or just just hit Enter for blank)\n";
   } else {
     print "Fargo ID Number [$potential_fargo_id]:\n";
   }
@@ -884,6 +950,9 @@ sub new_player {
 sub new_player_from_db {
   header();
 
+  # Take backup of status in case we want to undo
+  backup();
+
   # If db file does not exist, exit subroutine.
   if ( ! -e $player_db ) { 
     print "No db yet.\n";
@@ -967,6 +1036,9 @@ sub new_player_from_db {
 
 sub delete_player {
 
+  # Take backup of status in case we want to undo
+  backup();
+
   header();
 
   my @players = keys(%players);
@@ -1017,6 +1089,9 @@ sub delete_player {
 
 sub give_chip {
 
+  # Take backup of status in case we want to undo
+  backup();
+
   my @players = keys(%players);
   @players = sort(@players);
 
@@ -1045,6 +1120,9 @@ sub give_chip {
 }
 
 sub take_chip {
+
+  # Take backup of status in case we want to undo
+  backup();
 
   my @players = keys(%players);
   @players = sort(@players);
@@ -1111,6 +1189,9 @@ sub move_player {
 
 
 sub delete_table {
+
+  # Take backup of status in case we want to undo
+  backup();
 
   my @tables = keys(%tables);
   @tables = sort { $a <=> $b } (@tables);
@@ -1251,9 +1332,12 @@ sub delete_players {
       push @dead, "$player: $players{$player}{'won'}" unless ( $player !~ /\w/ );
 
       # Delete the player
+      $undo_chips=$players{$player}{'chips'};
       delete $players{$player}{'chips'};
       delete $players{$player}{'table'};
+      $undo_won=$players{$player}{'won'};
       delete $players{$player}{'won'};
+      $undo_fargo_id=$players{$player}{'fargo_id'};
       delete $players{$player}{'fargo_id'};
       # Delete player from stack
       my @new_stack;
@@ -1610,4 +1694,15 @@ sub edit_player_db {
   sleep 3;
   if ( $^O =~ /MSWin32/     ) { system("start notepad.exe $player_db") }
   if ( $^O =~ /next|darwin/ ) { system("open $player_db") }
+}
+
+sub backup {
+  # Take backup of status in case we want to undo
+  %backup_players    = %{ dclone \%players };
+  %backup_tables     = %{ dclone \%tables };
+  @backup_dead       = @{ dclone \@dead};
+  @backup_stack      = @{ dclone \@stack};
+  @backup_whobeat    = @{ dclone \@whobeat};
+  @backup_whobeatcsv = @{ dclone \@whobeat_csv};
+  $shuffle_mode_undo = $shuffle_mode;
 }
