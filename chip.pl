@@ -769,6 +769,13 @@ sub new_table {
   print color('bold cyan') unless ( $Colors eq 'off');
   chomp(my $name = <STDIN>);
   print color('bold white') unless ( $Colors eq 'off');
+
+  if ( $name !~ /^[+-]?\d+$/ ) {
+    print "\nPlease enter only a table number. (No letters allowed.)\n";
+    sleep 4;
+    return;
+  }
+
   print "Add Table Number $name, correct?\n";
   my $yesorno = yesorno();
   chomp($yesorno);
@@ -1391,7 +1398,7 @@ sub header {
   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
 
   if ( $min < 10 ) { $min = "0$min" }
-  if ( $sec < 10 ) { $sec = "0$min" }
+  if ( $sec < 10 ) { $sec = "0$sec" }
 
   my $ampm = 'AM';
   if ( $hour > 12 ) { 
