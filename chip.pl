@@ -627,12 +627,12 @@ sub loser {
       } 
     }
 
-    if ( $extra_tables_count > 1 ) {
+    if ( $extra_tables_count > 2 ) {
         $extra_players = 'yes';
     }
 
     # Delete table from tourney once it's no longer needed.
-    if (( $extra_players eq 'no' ) and ( $raw_tables_count > 3 )) {
+    if (( $extra_players eq 'no' ) and ( $raw_tables_count > 2 )) {
       my $remove_table = $players{$opponent}{'table'};
       $players{$opponent}{'table'} = 'none';
       header();
@@ -643,6 +643,7 @@ sub loser {
       print "**************\n\n";
       print color('bold white') unless ( $Colors eq 'off');
       print "\n\n\nRemoving table $remove_table from tourney.  $opponent gets back in line.\n\nAny key to continue.\n";
+      $players{$opponent}{'flip_break'} = 'yes';
       yesorno('any');
       delete $tables{$remove_table};
     }
@@ -658,7 +659,13 @@ sub loser {
           $players{$standup}{'table'} = $table;
 	  $player_standup = $standup;
           header();
-	  $send      = "\n\nSend $standup to table $table\n";
+	  if ( $players{$standup}{'flip_break'} eq 'yes' ) {
+	    $send = "\n\nFLIP FOR BREAK\n";
+	    $players{$standup}{'flip_break'} eq 'no'; 
+          } else {
+	      $send = "\n\n";
+	  }
+	  $send .= "Send $standup to table $table\n";
           last;
         }
       }
