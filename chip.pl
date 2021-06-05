@@ -119,7 +119,7 @@ print color($color) unless ( $Colors eq 'off');
 
 # Set the size of the console
 if ( $^O =~ /MSWin32/ ) {
-  system("mode con lines=60 cols=140");
+  system("mode con lines=30 cols=140");
 }
 if ( $^O =~ /darwin/ ) {
   system("osascript -e 'tell app \"Terminal\" to set background color of first window to {0, 0, 0, -16373}'");
@@ -347,7 +347,8 @@ sub draw_screen {
     my $current_time = time();
     my $time_used = $current_time - $time_start;
     my $time_used_pretty = parse_duration($time_used);
-    $time_used_pretty =~ s/^\d\d://g;
+    $time_used_pretty =~ s/^\d\d://g; # Remove hours digits
+    $time_used_pretty =~ s/^0//g;     # Remove zero from beginning of time
     my $printit;
     if ( $time_start > 0 ) {
       $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time_used_pretty", "$won", "$chips", "$table" );
