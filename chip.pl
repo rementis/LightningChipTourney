@@ -18,6 +18,9 @@
 # most recent win         #
 # June 2020               #
 #                         #
+# Add time tracking       #
+# June 2021               #
+#                         #
 ###########################
 
 use strict;
@@ -134,10 +137,11 @@ if ( -e $namestxt ) {
   foreach(@names) {
     my $line = $_;
     my @split = split /:/, $line;
-    $players{$split[0]}{'chips'} = $split[1];
-    $players{$split[0]}{'table'} = $split[2];
-    $players{$split[0]}{'fargo_id'} = $split[3];
-    $players{$split[0]}{'won'} = 0;
+    my $player_name = $split[0];
+    $players{$player_name}{'chips'} = $split[1];
+    $players{$player_name}{'table'} = $split[2];
+    $players{$player_name}{'fargo_id'} = $split[3];
+    $players{$player_name}{'won'} = 0;
   }
   $tables{'6'}=1;
   $tables{'5'}=1;
@@ -162,6 +166,7 @@ while(1) {
 
   # Delete players who have zero chips
   delete_players();
+
   # Draw the screen
   draw_screen();
 
@@ -276,7 +281,8 @@ sub draw_screen {
 
   print color('bold yellow') unless ( $Colors eq 'off');;
   if ( $number_of_players > 0 ) {
-    print "Player:                        Won:       Chips:     Table:\n\n";
+    #print "Player:                        Won:       Chips:     Table:\n\n";
+    print "Player:                        Time:      Won:       Chips:     Table:\n\n";
   }
   $screen_contents .= "Player:                        Won:       Chips:     Table:\n\n";
   my @players = keys(%players);
@@ -291,7 +297,8 @@ sub draw_screen {
     my $chips = $players{$player}{'chips'};
     my $table = $players{$player}{'table'};
     my $won   = $players{$player}{'won'};
-    my $line  = "$table:$player:$chips:$won";
+    my $time  = $players{$player}{'time'};
+    my $line  = "$table:$player:$chips:$won:$time";
     push @display_sort, $line;
   }
 
@@ -311,10 +318,12 @@ sub draw_screen {
       my $player = $split[1];
       my $chips  = $split[2];
       my $won    = $split[3];
+      #my $time   = $split[4];
+      my $time   = " ";
       if ( $table eq 'none' ) { $table = 'In line' }
-      my $printit = sprintf ( "%-30s %-10s %-10s %-8s\n", "$player", "$won", "$chips", "$table" );
+      my $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time", "$won", "$chips", "$table" );
       if ( $tourney_running eq 0 ) { 
-        $printit = sprintf ( "%-30s %-10s %-10s %-8s\n", "$player", "$won", "$chips", " " );
+        $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time", "$won", "$chips", " " );
       }
       if (( $stack_player eq $player ) and ( $table eq 'In line' )) {
         push @final_display, $printit;
@@ -332,7 +341,19 @@ sub draw_screen {
     my $player = $split[1];
     my $chips  = $split[2];
     my $won    = $split[3];
-    my $printit = sprintf ( "%-30s %-10s %-10s %-8s\n", "$player", "$won", "$chips", "$table" );
+    #my $time   = $split[4];
+    my $time   = "30";
+    my $time_start = $players{$player}{'time_start'};
+    my $current_time = time();
+    my $time_used = $current_time - $time_start;
+    my $time_used_pretty = parse_duration($time_used);
+    $time_used_pretty =~ s/^\d\d://g;
+    my $printit;
+    if ( $time_start > 0 ) {
+      $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time_used_pretty", "$won", "$chips", "$table" );
+    } else {
+      $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", " ", "$won", "$chips", "$table" );
+    }
     if ( $table !~ /none/ ) {
       push @final_display, $printit;
     }
@@ -578,7 +599,6 @@ sub loser {
     return;
   }
 
-    # Take away a chip.  :)
     $most_recent_loser = $player;
     $players{$player}{'chips'}--; # Take a chip from the loser
 
@@ -598,6 +618,8 @@ sub loser {
         if ( $players{$possible_opponent}{'table'} eq $table ) {
           $players{$possible_opponent}{'won'}++;
           my $printit = sprintf ( "%-30s %-10s %-30s\n", "$possible_opponent", 'beat', "$player" );
+	  $players{$player}{'time_start'}            = 0;
+	  $players{$possible_opponent}{'time_start'} = 0;
 	  $opponent = $possible_opponent;
           $most_recent_winner = $opponent;
 	  push @whobeat, $printit;
@@ -657,11 +679,12 @@ sub loser {
 
         if ( exists( $players{$standup} ) and ( $players{$standup}{'table'} eq 'none' ) ) { 
           $players{$standup}{'table'} = $table;
+          $players{$standup}{'time_start'} = time();
 	  $player_standup = $standup;
           header();
 	  if ( $players{$standup}{'flip_break'} eq 'yes' ) {
 	    $send = "\n\nFLIP FOR BREAK\n";
-	    $players{$standup}{'flip_break'} eq 'no'; 
+	    $players{$standup}{'flip_break'} = 'no'; 
           } else {
 	      $send = "\n\n";
 	  }
@@ -1369,6 +1392,7 @@ sub delete_players {
 }
 
 sub assign {
+  my $time_start    = time();
   my @tables        = keys(%tables);
   my @players       = keys(%players);
   my $count_tables  = @tables;
@@ -1385,6 +1409,7 @@ sub assign {
       my $player1 = shift(@stack);
       push @stack, $player1;
       $players{$player1}{'table'} = "$table";
+      $players{$player1}{'time_start'} = $time_start;
     }
     $counter++;
     if (( $counter <= $count_players ) and ( $counter <= $count_tables )) {
@@ -1719,4 +1744,9 @@ sub backup {
   @backup_whobeat    = @{ dclone \@whobeat};
   @backup_whobeatcsv = @{ dclone \@whobeat_csv};
   $shuffle_mode_undo = $shuffle_mode;
+}
+
+sub parse_duration {
+    use integer;
+    sprintf("%02d:%02d:%02d", $_[0]/3600, $_[0]/60%60, $_[0]%60);
 }
