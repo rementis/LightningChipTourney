@@ -689,7 +689,11 @@ sub loser {
           } else {
 	      $send = "\n\n";
 	  }
-	  $send .= "Send $standup to table $table\n";
+	  if ( $players{$standup}{'chips'} > 1 ) {
+	    $send .= "Send $standup to table $table\n";
+          } else {
+	    $send .= " \n";
+	  }
           last;
         }
       }
@@ -1445,9 +1449,9 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v6.25           Players: $number_of_players      $TIME              --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY                 Players: $number_of_players      $TIME              --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v6.25           Players: $number_of_players      $TIME              --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
@@ -1751,3 +1755,4 @@ sub parse_duration {
     use integer;
     sprintf("%02d:%02d:%02d", $_[0]/3600, $_[0]/60%60, $_[0]%60);
 }
+
