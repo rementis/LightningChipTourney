@@ -21,6 +21,9 @@
 # Add time tracking       #
 # June 2021               #
 #                         #
+# Add split screen        #
+# June 2021               #
+#                         #
 ###########################
 
 use strict;
@@ -28,6 +31,7 @@ use Term::ReadKey;
 use List::Util 'shuffle';
 use Term::ANSIColor;
 use POSIX;
+use Array::Columnize;
 use Storable qw/dclone/;
 $SIG{INT} = 'IGNORE';
 
@@ -70,6 +74,9 @@ if ( $^O =~ /MSWin32/ ) {
 
 # Hold state of screen in case we need to exit program
 my $screen_contents;
+
+# Keep record of number of players so we can split screen if needed
+my $master_number_of_players = 0;
 
 # Set outfile for final results
 my $outfile     = "$desktop";
@@ -279,12 +286,16 @@ sub draw_screen {
 
   header();
 
+  # Print single column header if 23 players or less
   print color('bold yellow') unless ( $Colors eq 'off');;
-  if ( $number_of_players > 0 ) {
-    #print "Player:                        Won:       Chips:     Table:\n\n";
+  if ( ($number_of_players > 0) && ($master_number_of_players < 24) ) {
     print "Player:                        Time:      Won:       Chips:     Table:\n\n";
   }
-  $screen_contents .= "Player:                        Won:       Chips:     Table:\n\n";
+  # Print double column header if 24 players or more
+  if ( ($number_of_players > 0) && ($master_number_of_players > 23) ) {
+    print "Player                   Time   Won Chips Table            Player                   Time   Won Chips Table\n\n";
+  }
+
   my @players = keys(%players);
   @players = sort(@players);
 
@@ -318,20 +329,34 @@ sub draw_screen {
       my $player = $split[1];
       my $chips  = $split[2];
       my $won    = $split[3];
-      #my $time   = $split[4];
       my $time   = " ";
       if ( $table eq 'none' ) { $table = 'In line' }
-      my $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time", "$won", "$chips", "$table" );
-      if ( $tourney_running eq 0 ) { 
-        $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time", "$won", "$chips", " " );
-      }
-      if (( $stack_player eq $player ) and ( $table eq 'In line' )) {
-        push @final_display, $printit;
-      }
+      my $printit;
+
+      if ( $master_number_of_players < 24 ) {
+        $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time", "$won", "$chips", "$table" );
+        if ( $tourney_running eq 0 ) { 
+          $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time", "$won", "$chips", " " );
+        }
+        if (( $stack_player eq $player ) and ( $table eq 'In line' )) {
+          push @final_display, $printit;
+        }
+      }  
+      if ( $master_number_of_players > 23 ) {
+        $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$player", "$time", "$won", "$chips", "$table" );
+        if ( $tourney_running eq 0 ) { 
+          $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$player", "$time", "$won", "$chips", " " );
+        }
+        if (( $stack_player eq $player ) and ( $table eq 'In line' )) {
+          push @final_display, $printit;
+        }
+      }  
     }
   }
-  my $blank_line = "\n";
-  push @final_display, "$blank_line";
+  if ( $master_number_of_players < 24 ) {
+    my $blank_line = "\n";
+    push @final_display, "$blank_line";
+  }
 
   # Add lines WITH table numbers to array
   foreach(@display_sort) {
@@ -350,52 +375,94 @@ sub draw_screen {
     $time_used_pretty =~ s/^\d\d://g; # Remove hours digits
     $time_used_pretty =~ s/^0//g;     # Remove zero from beginning of time
     my $printit;
-    if ( $time_start > 0 ) {
-      $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time_used_pretty", "$won", "$chips", "$table" );
-    } else {
-      $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", " ", "$won", "$chips", "$table" );
+
+    if ( $master_number_of_players < 24 ) {
+      if ( $time_start > 0 ) {
+        $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time_used_pretty", "$won", "$chips", "$table" );
+      } else {
+        $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", " ", "$won", "$chips", "$table" );
+      }
+      if ( $table !~ /none/ ) {
+        push @final_display, $printit;
+      }
     }
-    if ( $table !~ /none/ ) {
-      push @final_display, $printit;
+    if ( $master_number_of_players > 23 ) {
+      if ( $time_start > 0 ) {
+        $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$player", "$time_used_pretty", "$won", "$chips", "$table" );
+      } else {
+        $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$player", " ", "$won", "$chips", "$table" );
+      }
+      if ( $table !~ /none/ ) {
+        push @final_display, $printit;
+      }
     }
   }
 
   # Print to screen in correct TABLE order
   my $first_line = 'yes';
   my $color  = 'bold white';
-  foreach(@final_display) {
-    my $line   = $_;
-    print color($color) unless ( $Colors eq 'off');;
-    if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
-    if ($first_line eq 'yes') {
-      $line =~ s/In line/Next up/;
-      $first_line = 'no';
+  if ( $master_number_of_players < 24 ) {
+    foreach(@final_display) {
+      my $line   = $_;
+      print color($color) unless ( $Colors eq 'off');;
+      if ( $color eq 'bold white'  ) { $color = 'bold cyan' } else { $color = 'bold white' }
+      if ($first_line eq 'yes') {
+        $line =~ s/In line/Next up/;
+        $first_line = 'no';
+      }
+      if ($shuffle_mode eq 'on') {
+        $line =~ s/In line/ /;
+        $line =~ s/Next up/ /;
+      }
+      print "$line";
+      $screen_contents .= $line;
     }
-    if ($shuffle_mode eq 'on') {
-      $line =~ s/In line/ /;
-      $line =~ s/Next up/ /;
-    }
-    print "$line";
-    $screen_contents .= $line;
   }
-  $color  = 'bold white';
-  print color($color) unless ( $Colors eq 'off');;
+  if ( $master_number_of_players > 23 ) {
+    $final_display[0] =~ s/In line/Next up/;
+    my $color = 'bold cyan';
+    print color($color) unless ( $Colors eq 'off');;
+    print columnize(\@final_display,{displaywidth=>120,colsep=>'          '});
+  }
+
+  #$color  = 'bold white';
+  #print color($color) unless ( $Colors eq 'off');;
 
   print "\n";
   @dead = sort(@dead);
+  my @dead_display;
 
-  # Print to screen the list of dead players in RED font
-  foreach(@dead) {
-    my $line = $_;
-    my @split = split /:/, $line;
-    my $deadname = $split[0];
-    my $deadwon  = $split[1];
-    my $color  = 'bold red';
-    print color($color) unless ( $Colors eq 'off');;
-    my $printit = sprintf ( "%-29s %-10s\n", "$deadname", "$deadwon" );
-    print "$printit";
-    $screen_contents .= $printit;
+
+  if ( $master_number_of_players < 24 ) {
+    # Print to screen the list of dead players in RED font
+    foreach(@dead) {
+      my $line = $_;
+      my @split = split /:/, $line;
+      my $deadname = $split[0];
+      my $deadwon  = $split[1];
+      my $color  = 'bold red';
+      print color($color) unless ( $Colors eq 'off');;
+      my $printit = sprintf ( "%-29s %-10s\n", "$deadname", "$deadwon" );
+      print "$printit";
+      $screen_contents .= $printit;
+    }
   }
+  if ( $master_number_of_players > 23 ) {
+    foreach(@dead) {
+      my $line = $_;
+      my @split = split /:/, $line;
+      my $deadname = $split[0];
+      my $deadwon  = $split[1];
+      my $printit = sprintf ( "%-25s %-6s %-3s %-3s %-7s", "$deadname", "      ", "$deadwon", " ", " " );
+      push @dead_display, "$printit";
+      $screen_contents .= $printit;
+    }
+      my $color  = 'bold red';
+      print color($color) unless ( $Colors eq 'off');;
+      if ( exists($dead_display[0]) ) {
+        print columnize(\@dead_display,{displaywidth=>120,colsep=>'           '});
+      }
+    }
     my $color  = 'bold white';
     print color($color) unless ( $Colors eq 'off');;
 
@@ -689,7 +756,7 @@ sub loser {
           } else {
 	      $send = "\n\n";
 	  }
-	  if ( $players{$standup}{'chips'} > 1 ) {
+	  if ( $players{$standup}{'chips'} > 0 ) {
 	    $send .= "Send $standup to table $table\n";
           } else {
 	    $send .= " \n";
@@ -748,6 +815,7 @@ sub start_tourney {
   # Count number of players
   my @number_of_players = keys(%players);
   my $number_of_players = @number_of_players;
+  $master_number_of_players = $number_of_players;
 
   # Reduce by half because two players per table.
   my $number_of_players = $number_of_players / 2;
@@ -1449,15 +1517,15 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v6.25           Players: $number_of_players      $TIME              --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v7.00           Players: $number_of_players      $TIME                     --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v6.25           Players: $number_of_players      $TIME              --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v7.00           Players: $number_of_players      $TIME                     --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY     SHUFFLE     Players: $number_of_players      $TIME              --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY     SHUFFLE     Players: $number_of_players      $TIME                     --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY      SHUFFLE    Players: $number_of_players      $TIME              --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY      SHUFFLE    Players: $number_of_players      $TIME                     --by Martin Colello\n\n\n";
     }
   }
 
@@ -1755,4 +1823,5 @@ sub parse_duration {
     use integer;
     sprintf("%02d:%02d:%02d", $_[0]/3600, $_[0]/60%60, $_[0]%60);
 }
+
 
