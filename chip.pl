@@ -201,7 +201,6 @@ while(1) {
     if ( $number_of_players < 2 ){
       draw_screen();
       print "\nEnd of tourney.\n";
-      print OUTFILE "$screen_contents\n\n";
 
       # Print list of who beat who to log file
       @whobeat = sort(@whobeat);
@@ -339,7 +338,11 @@ sub draw_screen {
       my $printit;
 
       if ( $master_number_of_players < 24 ) {
-        $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time", "$won", "$chips", "$table" );
+	if (( $shuffle_mode eq 'on' ) and ( $table eq 'In line' )) { 
+          $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time", "$won", "$chips", " " );
+	} else {
+          $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time", "$won", "$chips", "$table" );
+	}
         if ( $tourney_running eq 0 ) { 
           $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time", "$won", "$chips", " " );
         }
@@ -348,7 +351,11 @@ sub draw_screen {
         }
       }  
       if ( $master_number_of_players > 23 ) {
-        $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$player", "$time", "$won", "$chips", "$table" );
+	if (( $shuffle_mode eq 'on' ) and ( $table eq 'In line' )) { 
+          $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$player", "$time", "$won", "$chips", " " );
+	} else {
+          $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$player", "$time", "$won", "$chips", "$table" );
+	}
         if ( $tourney_running eq 0 ) { 
           $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$player", "$time", "$won", "$chips", " " );
         }
@@ -415,7 +422,7 @@ sub draw_screen {
         $line =~ s/In line/Next up/;
         $first_line = 'no';
       }
-      if ($shuffle_mode eq 'on') {
+      if ($shuffle_mode =~ /on/ ) {
         $line =~ s/In line/ /;
         $line =~ s/Next up/ /;
       }
@@ -425,6 +432,10 @@ sub draw_screen {
   }
   if ( $master_number_of_players > 23 ) {
     $final_display[0] =~ s/In line/Next up/;
+    if ($shuffle_mode =~ /on/ ) {
+      $final_display[0] =~ s/In line/ /;
+      $final_display[0] =~ s/Next up/ /;
+    }
     my $color = 'bold cyan';
     print color($color) unless ( $Colors eq 'off');;
     print columnize(\@final_display,{displaywidth=>120,colsep=>'          '});
@@ -1435,7 +1446,8 @@ sub shuffle_stack {
 
     if ( $check_if_auto ne 'AUTO' ) {
       print "Shuffled.\n";
-      sleep 1;
+      select undef, undef, undef, 0.5;
+      #sleep 1;
     }
   }
 }
@@ -1525,9 +1537,9 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v7.01           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v7.02           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v7.01           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v7.02           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
@@ -1671,7 +1683,12 @@ sub game_and_event {
     print "\nExample: Freezer's Lightning Nine Ball Chip Tourney\n\n";
     print color('bold cyan') unless ( $Colors eq 'off');
     chomp($event = <STDIN>);
-    if ($event =~ /\w/ ) { last }
+    if ($event =~ /\w/ ) {
+      last;
+    } else {
+      $event = "The Martin Colello Classic";
+      last;
+    } 
   }
 
   print color('bold white') unless ( $Colors eq 'off');
