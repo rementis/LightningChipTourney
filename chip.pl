@@ -37,6 +37,7 @@ use Term::ANSIColor;
 use POSIX;
 use Array::Columnize;
 use Storable qw/dclone/;
+use if $^O eq "MSWin32", "Win32::Sound";
 $SIG{INT} = 'IGNORE';
 
 # Get current date
@@ -168,7 +169,18 @@ print "| |___| | (_| | | | | |_| | | | | | | | (_| | | |___| | | | | |_)|\n";
 print "|_____|_|\\__, |_| |_|\\__|_| |_|_|_| |_|\\__, |  \\____|_| |_|_| .__/ \n";
 print "         |___/                         |___/                |_|    \n\n\n\n\n\n";
 print "                                           --by Martin Colello\n";
-#yesorno('any');
+
+# Play sound effect
+if ( $^O =~ /MSWin32/ ) {
+  Win32::Sound::Play("lightning.wav");
+}
+if ( $^O =~ /linux/ ) {
+  my $paplay = '/usr/bin/paplay';
+  if ( -e $paplay ) {
+    system '/usr/bin/paplay', 'lightning.wav';
+  }
+}
+
 sleep 2;
 
 game_and_event();
@@ -1537,9 +1549,9 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v7.02           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v7.03           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v7.02           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v7.03           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
