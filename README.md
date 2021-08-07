@@ -2,7 +2,7 @@ Lightning Chip Tourney           --by Martin Colello
 
 Read the text below, and then click Wiki above for a quick description of the software commands.
 
-Now version 7.00 with Undo option, flip for break, and a match timer!
+Now version 7.25 with Undo option, flip for break, and a match timer!
 
 You can hit the 'C' key to turn colors off if you prefer.
 
