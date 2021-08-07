@@ -28,6 +28,10 @@
 # name issue              #
 # July 2021               #
 #                         #
+# Fix fargo missing from  #
+# log issue               # 
+# Aug 2021                #
+#                         #
 ###########################
 
 use strict;
@@ -109,7 +113,7 @@ my $most_recent_table = 'none';  # Keep track table for undo
 my $most_recent_winner = 'none'; # Keep track of who lost recently for stack manipulation
 my $player_standup = 'none';     # For undo tracking
 my $game = 'none';               # Store game type (8/9/10 ball)
-my $event;                       # Store Event name (Freezer's Chip etc)
+my $event;                       # Store Event name (Martin's Chip Tourney etc)
 my $shuffle_mode = 'off';        # Keep track of shuffle mode off/on
 my $send = 'none';               # Keep track of send new player to table information
 my $undo_fargo_id;
@@ -343,6 +347,7 @@ sub draw_screen {
       my @split  = split /:/, $line;
       my $table  = $split[0];
       my $player = $split[1];
+      my $display_player = substr($player, 0, 24);
       my $chips  = $split[2];
       my $won    = $split[3];
       my $time   = " ";
@@ -351,12 +356,12 @@ sub draw_screen {
 
       if ( $master_number_of_players < 24 ) {
 	if (( $shuffle_mode eq 'on' ) and ( $table eq 'In line' )) { 
-          $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time", "$won", "$chips", " " );
+          $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$display_player", "$time", "$won", "$chips", " " );
 	} else {
-          $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time", "$won", "$chips", "$table" );
+          $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$display_player", "$time", "$won", "$chips", "$table" );
 	}
         if ( $tourney_running eq 0 ) { 
-          $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time", "$won", "$chips", " " );
+          $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$display_player", "$time", "$won", "$chips", " " );
         }
         if (( $stack_player eq $player ) and ( $table eq 'In line' )) {
           push @final_display, $printit;
@@ -364,12 +369,12 @@ sub draw_screen {
       }  
       if ( $master_number_of_players > 23 ) {
 	if (( $shuffle_mode eq 'on' ) and ( $table eq 'In line' )) { 
-          $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$player", "$time", "$won", "$chips", " " );
+          $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$display_player", "$time", "$won", "$chips", " " );
 	} else {
-          $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$player", "$time", "$won", "$chips", "$table" );
+          $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$display_player", "$time", "$won", "$chips", "$table" );
 	}
         if ( $tourney_running eq 0 ) { 
-          $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$player", "$time", "$won", "$chips", " " );
+          $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$display_player", "$time", "$won", "$chips", " " );
         }
         if (( $stack_player eq $player ) and ( $table eq 'In line' )) {
           push @final_display, $printit;
@@ -388,6 +393,7 @@ sub draw_screen {
     my @split  = split /:/, $line;
     my $table  = $split[0];
     my $player = $split[1];
+    my $display_player = substr($player, 0, 24);
     my $chips  = $split[2];
     my $won    = $split[3];
     #my $time   = $split[4];
@@ -402,9 +408,9 @@ sub draw_screen {
 
     if ( $master_number_of_players < 24 ) {
       if ( $time_start > 0 ) {
-        $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", "$time_used_pretty", "$won", "$chips", "$table" );
+        $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$display_player", "$time_used_pretty", "$won", "$chips", "$table" );
       } else {
-        $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$player", " ", "$won", "$chips", "$table" );
+        $printit = sprintf ( "%-30s %-10s %-10s %-10s %-8s\n", "$display_player", " ", "$won", "$chips", "$table" );
       }
       if ( $table !~ /none/ ) {
         push @final_display, $printit;
@@ -412,9 +418,9 @@ sub draw_screen {
     }
     if ( $master_number_of_players > 23 ) {
       if ( $time_start > 0 ) {
-        $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$player", "$time_used_pretty", "$won", "$chips", "$table" );
+        $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$display_player", "$time_used_pretty", "$won", "$chips", "$table" );
       } else {
-        $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$player", " ", "$won", "$chips", "$table" );
+        $printit = sprintf ( "%-25s %-7s %-3s %-3s %-7s", "$display_player", " ", "$won", "$chips", "$table" );
       }
       if ( $table !~ /none/ ) {
         push @final_display, $printit;
@@ -467,10 +473,11 @@ sub draw_screen {
       my $line = $_;
       my @split = split /:/, $line;
       my $deadname = $split[0];
+      my $display_player = substr($deadname, 0, 24);
       my $deadwon  = $split[1];
       my $color  = 'bold red';
       print color($color) unless ( $Colors eq 'off');;
-      my $printit = sprintf ( "%-40s %-3s\n", "$deadname", "$deadwon" );
+      my $printit = sprintf ( "%-40s %-3s\n", "$display_player", "$deadwon" );
       print "$printit";
       $screen_contents .= $printit;
     }
@@ -480,8 +487,9 @@ sub draw_screen {
       my $line = $_;
       my @split = split /:/, $line;
       my $deadname = $split[0];
+      my $display_player = substr($deadname, 0, 24);
       my $deadwon  = $split[1];
-      my $printit = sprintf ( "%-25s %-6s %-3s %-3s %-7s", "$deadname", "      ", "$deadwon", " ", " " );
+      my $printit = sprintf ( "%-25s %-6s %-3s %-3s %-7s", "$display_player", "      ", "$deadwon", " ", " " );
       push @dead_display, "$printit";
       $screen_contents .= $printit;
     }
@@ -990,7 +998,7 @@ sub new_player {
   my $name_lower = lc($name);
   my $name_db = $name;
   $name = "$name ($fargo)";
-  $name = substr($name, 0, 24);
+  #$name = substr($name, 0, 24);
 
   if ( exists($players{$name}) ) {
     print "Player already exists.\n";
@@ -1128,11 +1136,11 @@ sub new_player_from_db {
   chomp(my $fargo = <STDIN>);
   print color('bold white') unless ( $Colors eq 'off');
   if ( $fargo !~ /^\d+\z/ ) {
-    $fargo = 100;;
+    $fargo = 100;
   }
 
   $name = "$name ($fargo)";
-  $name = substr($name, 0, 24);
+  #$name = substr($name, 0, 24);
   if ( exists($players{$name}) ) {
     print "Player already exists.\n";
     sleep 3;
@@ -1549,9 +1557,9 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v7.03           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v7.25           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v7.03           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v7.25           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
@@ -1692,7 +1700,7 @@ sub game_and_event {
   while(1){
     header();
     print "Please enter Event Name:\n";
-    print "\nExample: Freezer's Lightning Nine Ball Chip Tourney\n\n";
+    print "\nExample: Pricilla's Nine Ball Chip Tourney\n\n";
     print color('bold cyan') unless ( $Colors eq 'off');
     chomp($event = <STDIN>);
     if ($event =~ /\w/ ) {
@@ -1812,8 +1820,8 @@ sub history {
     my $winner_id  = $split[3];
     my $loser_id   = $split[4];
     my $date_lost  = $split[5];
-    $winner =~ s/\(\d+\)//g;
-    $loser  =~ s/\(\d+\)//g;
+    #$winner =~ s/\(\d+\)//g;
+    #$loser  =~ s/\(\d+\)//g;
     print OUTCSV "$winner_id,$winner,1,$loser_id,$loser,0,$date_lost,$game,$table,$event\n";
   }
   close OUTCSV;
@@ -1860,6 +1868,7 @@ sub parse_duration {
     use integer;
     sprintf("%02d:%02d:%02d", $_[0]/3600, $_[0]/60%60, $_[0]%60);
 }
+
 
 
 
