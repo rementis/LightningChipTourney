@@ -32,6 +32,9 @@
 # log issue               # 
 # Aug 2021                #
 #                         #
+# Add Forfeit subroutine  #
+# September 2021          #
+#                         #
 ###########################
 
 use strict;
@@ -260,6 +263,7 @@ while(1) {
         $done = 1 if $choice eq 'S';
         $done = 1 if $choice eq 'U';
         $done = 1 if $choice eq 'E';
+        $done = 1 if $choice eq 'F';
       }
       if ( $tourney_running eq 0 ) {
         $done = 1 if $choice eq 'B';
@@ -286,6 +290,7 @@ while(1) {
   if ( $choice eq 'P'  ) { new_player_from_db() }
   if ( $choice eq 'I'  ) { edit_player_db()     }
   if ( $choice eq 'U'  ) { undo_last_loser()    }
+  if ( $choice eq 'F'  ) { forfeit()            }
 
 }# End of MAIN LOOP
 
@@ -577,7 +582,7 @@ sub draw_screen {
     print color('bold yellow') unless ( $Colors eq 'off');
     print "D";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")elete player  (";
+    print ")elete player (";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "A";
     print color('bold white') unless ( $Colors eq 'off');
@@ -607,9 +612,9 @@ sub draw_screen {
     print color('bold white') unless ( $Colors eq 'off');
     print ")ake chip  (";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "P";
+    print "F";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")layer from db (";
+    print ")orfeit       (";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "C";
     print color('bold white') unless ( $Colors eq 'off');
@@ -1557,9 +1562,9 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v7.25           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v7.30           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v7.25           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v7.30           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
@@ -1851,6 +1856,39 @@ sub edit_player_db {
   sleep 3;
   if ( $^O =~ /MSWin32/     ) { system("start notepad.exe $player_db") }
   if ( $^O =~ /next|darwin/ ) { system("open $player_db") }
+}
+
+sub forfeit {
+
+  # Take backup of status in case we want to undo
+  backup();
+
+  my @players = keys(%players);
+  @players = sort(@players);
+
+  header();
+  $color = 'bold white';
+  print color($color) unless ( $Colors eq 'off');
+  print "\nPlease choose number of player to take chip:\n\n";
+  my $numselection = print_menu_array(@players);
+
+  if ( $numselection == 1000 ) {
+    return;
+  }
+  
+  my $player = $players[$numselection];
+  chomp($player);
+
+  print "Player $player will forfeit, correct?\n";
+  my $yesorno = yesorno();
+  chomp($yesorno);
+  if ( $yesorno eq 'y' ) {
+    $players{$player}{'chips'} = 0;
+    delete_players();
+    return;
+  } else {
+    return
+  } 
 }
 
 sub backup {
