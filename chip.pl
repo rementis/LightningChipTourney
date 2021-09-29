@@ -35,6 +35,10 @@
 # Add Forfeit subroutine  #
 # September 2021          #
 #                         #
+# Fix issue with user     #
+# containing spaces       #
+# September 2021          #
+#                         #
 ###########################
 
 use strict;
@@ -70,6 +74,8 @@ if ( $^O =~ /MSWin32/ ) {
   $profile     =~ s/userprofile=//i;
   $desktop     = $profile . "\\desktop\\$desktop";
   $desktop_csv = $profile . "\\desktop\\$desktop_csv";
+
+
   if ( exists $ENV{'LOCALAPPDATA'} ) {
     my $local_app_data = $ENV{'LOCALAPPDATA'};
     $fargo_storage_file = "$local_app_data\\$fargo_storage_file";
@@ -85,6 +91,7 @@ if ( $^O =~ /MSWin32/ ) {
   $windows_ver = `ver`;
 }
 
+
 # Hold state of screen in case we need to exit program
 my $screen_contents;
 
@@ -95,8 +102,13 @@ my $master_number_of_players = 0;
 my $outfile     = "$desktop";
 my $outfile_csv = "$desktop_csv";
 
+#print "outfile is $outfile\n\n";
+#print "outfile_csv is $outfile_csv\n\n";
+
+#sleep 15;
+
 # Open log file
-open OUTFILE, ">$outfile" or die "Cannot open results file: $!";
+open (OUTFILE,'>',$outfile) or die "Cannot open results file: $!";
 print OUTFILE "$abbr[$mon]".' '."$mday".' '."$year"."\n";
 print OUTFILE "Lightning Chip Tourney results:                      --by Martin Colello\n\n";
 
@@ -232,7 +244,7 @@ while(1) {
       history();
 
       # Open log file
-      if ( $^O =~ /MSWin32/     ) { system("start notepad.exe $desktop") }
+      if ( $^O =~ /MSWin32/     ) { system("start notepad.exe \"$desktop\"") }
       if ( $^O =~ /next|darwin/ ) { system("open $desktop") }
       exit;
     }
@@ -966,14 +978,14 @@ sub new_player {
   my $potential_fargo_id = 0;
   my @fargo_storage;
   if ( -e $fargo_storage_file ) {
-    open FARGO, "<$fargo_storage_file";
+    open (FARGO, '<',$fargo_storage_file);
     @fargo_storage = <FARGO>;
     close FARGO;
   }
 
   my @player_db;
   if ( -e $player_db ) {
-    open PLAYER_DB, "<$player_db";
+    open (PLAYER_DB, '<',$player_db);
     @player_db = <PLAYER_DB>;
     close PLAYER_DB;
   }
@@ -1082,7 +1094,7 @@ sub new_player {
 
     # Write out new fargo keys file
     $fargo_id{$name_lower} = $fargo_id;
-    open OUT, ">$fargo_storage_file";
+    open (OUT, '>',$fargo_storage_file);
     my @fargo_id_keys = keys(%fargo_id);
     @fargo_id_keys = sort(@fargo_id_keys);
     foreach(@fargo_id_keys){
@@ -1092,7 +1104,7 @@ sub new_player {
     
     # Write out new player databases file
     $fargo_id{$name_lower} = $fargo_id;
-    open OUT, ">$player_db";
+    open (OUT, '>',$player_db);
     foreach(@player_db){
       my $line = $_;
       print OUT "$line\n";
@@ -1113,7 +1125,7 @@ sub new_player_from_db {
     return;
   }
 
-  open DB, "<$player_db" or return;
+  open (DB, '<',$player_db) or return;
   chomp(my @db = <DB>);
   close DB;
 
@@ -1181,7 +1193,7 @@ sub new_player_from_db {
   if ( $tourney_running eq 1 ) {
     unshift @stack, $name;
   }
-  open DB, ">$player_db" or return;
+  open (DB, '>',$player_db) or return;
   foreach(@db){
     print DB "$_\n";
   }
@@ -1408,7 +1420,7 @@ sub quit_program {
     close OUTFILE;
     print "\nEnd of tourney.\n";
     if ( $^O =~ /MSWin32/ ) {
-      system("start notepad.exe $desktop");
+      system("start notepad.exe \"$desktop\"");
     }
     if ( $^O =~ /next|darwin/ ) {
       system("open $desktop");
@@ -1562,9 +1574,9 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v7.30           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v7.40           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v7.30           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v7.40           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
@@ -1727,7 +1739,7 @@ sub game_and_event {
 
   my @chip_rating_storage;
   if ( -e $chip_rating_storage_file ) {
-    open CHIP, "<$chip_rating_storage_file";
+    open (CHIP, '<',$chip_rating_storage_file);
     @chip_rating_storage = <CHIP>;
     close CHIP;
     $chips_8 = shift(@chip_rating_storage);
@@ -1782,7 +1794,7 @@ sub game_and_event {
   chomp($chips_6);
   chomp($chips_5);
   chomp($chips_4);
-  open CHIP, ">$chip_rating_storage_file" or return;
+  open (CHIP, '>',$chip_rating_storage_file) or return;
   print CHIP "$chips_8\n";
   print CHIP "$chips_7\n";
   print CHIP "$chips_6\n";
@@ -1813,7 +1825,7 @@ sub enter_shuffle_mode {
 sub history {
   header();
   print "Opening history file...\n";
-  open OUTCSV, ">$outfile_csv";
+  open (OUTCSV, '>',$outfile_csv);
   print OUTCSV "Player #1,,,Player #2,\n";
   print OUTCSV "Fargo ID,Player Name,Score,Fargo ID,Player Name,Score,Date,Game,Table,Event\n";
   foreach(@whobeat_csv) {
@@ -1832,7 +1844,7 @@ sub history {
   close OUTCSV;
 
   # Open log file
-  if ( $^O =~ /MSWin32/     ) { system("start $outfile_csv") }
+  if ( $^O =~ /MSWin32/     ) { system("start \"$outfile_csv\"") }
   if ( $^O =~ /next|darwin/ ) { system("open $outfile_csv") }
   print "Please wait...\n";
   sleep 2;
@@ -1854,7 +1866,7 @@ sub edit_player_db {
   print "\n\nOpening player database...\n";
   print color('bold white') unless ( $Colors eq 'off');
   sleep 3;
-  if ( $^O =~ /MSWin32/     ) { system("start notepad.exe $player_db") }
+  if ( $^O =~ /MSWin32/     ) { system("start notepad.exe \"$player_db\"") }
   if ( $^O =~ /next|darwin/ ) { system("open $player_db") }
 }
 
