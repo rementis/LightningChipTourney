@@ -1717,7 +1717,7 @@ sub game_and_event {
   while(1){
     header();
     print "Please enter Event Name:\n";
-    print "\nExample: Pricilla's Nine Ball Chip Tourney\n\n";
+    print "\nExample: Priscilla's Nine Ball Chip Tourney\n\n";
     print color('bold cyan') unless ( $Colors eq 'off');
     chomp($event = <STDIN>);
     if ($event =~ /\w/ ) {
