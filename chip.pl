@@ -39,6 +39,9 @@
 # containing spaces       #
 # September 2021          #
 #                         #
+# Add five levels of undo #
+# October 2021            #
+#                         #
 ###########################
 
 use strict;
@@ -131,16 +134,45 @@ my $game = 'none';               # Store game type (8/9/10 ball)
 my $event;                       # Store Event name (Martin's Chip Tourney etc)
 my $shuffle_mode = 'off';        # Keep track of shuffle mode off/on
 my $send = 'none';               # Keep track of send new player to table information
+my $undo_last_loser_count = 0;   # Keep track of level of undo
 my $undo_fargo_id;
 my $undo_won;
 my $undo_chips;
 my $shuffle_mode_undo = 'off';
+my $shuffle_mode_undo2 = 'off';
+my $shuffle_mode_undo3 = 'off';
+my $shuffle_mode_undo4 = 'off';
+my $shuffle_mode_undo5 = 'off';
 my %backup_players;
+my %backup_players2;
+my %backup_players3;
+my %backup_players4;
+my %backup_players5;
 my %backup_tables;
+my %backup_tables2;
+my %backup_tables3;
+my %backup_tables4;
+my %backup_tables5;
 my @backup_dead;
+my @backup_dead2;
+my @backup_dead3;
+my @backup_dead4;
+my @backup_dead5;
 my @backup_stack;
+my @backup_stack2;
+my @backup_stack3;
+my @backup_stack4;
+my @backup_stack5;
 my @backup_whobeat;
+my @backup_whobeat2;
+my @backup_whobeat3;
+my @backup_whobeat4;
+my @backup_whobeat5;
 my @backup_whobeatcsv;
+my @backup_whobeatcsv2;
+my @backup_whobeatcsv3;
+my @backup_whobeatcsv4;
+my @backup_whobeatcsv5;
 my $chips_8 = 461;
 my $chips_7 = 521;
 my $chips_6 = 581;
@@ -751,6 +783,7 @@ sub loser {
 
     # Delete players from tourney if chips are zero
     delete_players();
+    $undo_last_loser_count = 0;
 
     # Assign table to new player if possible
     my @players_count = keys(%players);
@@ -845,17 +878,82 @@ sub undo_last_loser {
     return;
   }
 
-  print "Reverting...\n";
-  %players      = %{ dclone \%backup_players};
-  %tables       = %{ dclone \%backup_tables};
-  @dead         = @{ dclone \@backup_dead};
-  @stack        = @{ dclone \@backup_stack};
-  @whobeat      = @{ dclone \@backup_whobeat};
-  @whobeat_csv  = @{ dclone \@backup_whobeatcsv};
-  $shuffle_mode = $shuffle_mode_undo;
-  sleep 2;
-
-  $send = "\n\n";
+  if ( $undo_last_loser_count eq 0 ) {
+    %players      = %{ dclone \%backup_players};
+    %tables       = %{ dclone \%backup_tables};
+    @dead         = @{ dclone \@backup_dead};
+    @stack        = @{ dclone \@backup_stack};
+    @whobeat      = @{ dclone \@backup_whobeat};
+    @whobeat_csv  = @{ dclone \@backup_whobeatcsv};
+    $shuffle_mode = $shuffle_mode_undo;
+    $undo_last_loser_count = 1;
+    print "Reverting level one...\n";
+    sleep 2;
+    $send = "\n\n";
+    return;
+  }
+  if ( $undo_last_loser_count eq 1 ) {
+    %players      = %{ dclone \%backup_players2};
+    %tables       = %{ dclone \%backup_tables2};
+    @dead         = @{ dclone \@backup_dead2};
+    @stack        = @{ dclone \@backup_stack2};
+    @whobeat      = @{ dclone \@backup_whobeat2};
+    @whobeat_csv  = @{ dclone \@backup_whobeatcsv2};
+    $shuffle_mode = $shuffle_mode_undo2;
+    $undo_last_loser_count = 2;
+    print "Reverting level two...\n";
+    sleep 2;
+    $send = "\n\n";
+    return;
+  }
+  if ( $undo_last_loser_count eq 2 ) {
+    %players      = %{ dclone \%backup_players3};
+    %tables       = %{ dclone \%backup_tables3};
+    @dead         = @{ dclone \@backup_dead3};
+    @stack        = @{ dclone \@backup_stack3};
+    @whobeat      = @{ dclone \@backup_whobeat3};
+    @whobeat_csv  = @{ dclone \@backup_whobeatcsv3};
+    $shuffle_mode = $shuffle_mode_undo3;
+    $undo_last_loser_count = 3;
+    print "Reverting level three...\n";
+    sleep 2;
+    $send = "\n\n";
+    return;
+  }
+  if ( $undo_last_loser_count eq 3 ) {
+    %players      = %{ dclone \%backup_players4};
+    %tables       = %{ dclone \%backup_tables4};
+    @dead         = @{ dclone \@backup_dead4};
+    @stack        = @{ dclone \@backup_stack4};
+    @whobeat      = @{ dclone \@backup_whobeat4};
+    @whobeat_csv  = @{ dclone \@backup_whobeatcsv4};
+    $shuffle_mode = $shuffle_mode_undo4;
+    $undo_last_loser_count = 4;
+    print "Reverting level four...\n";
+    sleep 2;
+    $send = "\n\n";
+    return;
+  }
+  if ( $undo_last_loser_count eq 4 ) {
+    %players      = %{ dclone \%backup_players5};
+    %tables       = %{ dclone \%backup_tables5};
+    @dead         = @{ dclone \@backup_dead5};
+    @stack        = @{ dclone \@backup_stack5};
+    @whobeat      = @{ dclone \@backup_whobeat5};
+    @whobeat_csv  = @{ dclone \@backup_whobeatcsv5};
+    $shuffle_mode = $shuffle_mode_undo5;
+    $undo_last_loser_count = 5;
+    print "Reverting level five...\n";
+    sleep 2;
+    $send = "\n\n";
+    return;
+  }
+  if ( $undo_last_loser_count eq 5 ) {
+    print "No more undo levels available...\n";
+    sleep 2;
+    $send = "\n\n";
+    return;
+  }
 }
 
 sub start_tourney {
@@ -1574,9 +1672,9 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v7.40           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v8.00           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v7.40           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v8.00           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
@@ -1905,13 +2003,45 @@ sub forfeit {
 
 sub backup {
   # Take backup of status in case we want to undo
-  %backup_players    = %{ dclone \%players };
-  %backup_tables     = %{ dclone \%tables };
-  @backup_dead       = @{ dclone \@dead};
-  @backup_stack      = @{ dclone \@stack};
-  @backup_whobeat    = @{ dclone \@whobeat};
-  @backup_whobeatcsv = @{ dclone \@whobeat_csv};
-  $shuffle_mode_undo = $shuffle_mode;
+  $shuffle_mode_undo5 = $shuffle_mode_undo4;
+  %backup_players5    = %{ dclone \%backup_players4 };
+  %backup_tables5     = %{ dclone \%backup_tables4 };
+  @backup_dead5       = @{ dclone \@backup_dead4};
+  @backup_stack5      = @{ dclone \@backup_stack4};
+  @backup_whobeat5    = @{ dclone \@backup_whobeat4};
+  @backup_whobeatcsv5 = @{ dclone \@backup_whobeatcsv4};
+
+  $shuffle_mode_undo4 = $shuffle_mode_undo2;
+  %backup_players4    = %{ dclone \%backup_players3 };
+  %backup_tables4     = %{ dclone \%backup_tables3 };
+  @backup_dead4       = @{ dclone \@backup_dead3};
+  @backup_stack4      = @{ dclone \@backup_stack3};
+  @backup_whobeat4    = @{ dclone \@backup_whobeat3};
+  @backup_whobeatcsv4 = @{ dclone \@backup_whobeatcsv3};
+  
+  $shuffle_mode_undo3 = $shuffle_mode_undo2;
+  %backup_players3    = %{ dclone \%backup_players2 };
+  %backup_tables3     = %{ dclone \%backup_tables2 };
+  @backup_dead3       = @{ dclone \@backup_dead2};
+  @backup_stack3      = @{ dclone \@backup_stack2};
+  @backup_whobeat3    = @{ dclone \@backup_whobeat2};
+  @backup_whobeatcsv3 = @{ dclone \@backup_whobeatcsv2};
+
+  $shuffle_mode_undo2 = $shuffle_mode_undo;
+  %backup_players2    = %{ dclone \%backup_players };
+  %backup_tables2     = %{ dclone \%backup_tables };
+  @backup_dead2       = @{ dclone \@backup_dead};
+  @backup_stack2      = @{ dclone \@backup_stack};
+  @backup_whobeat2    = @{ dclone \@backup_whobeat};
+  @backup_whobeatcsv2 = @{ dclone \@backup_whobeatcsv};
+
+  $shuffle_mode_undo  = $shuffle_mode;
+  %backup_players     = %{ dclone \%players };
+  %backup_tables      = %{ dclone \%tables };
+  @backup_dead        = @{ dclone \@dead};
+  @backup_stack       = @{ dclone \@stack};
+  @backup_whobeat     = @{ dclone \@whobeat};
+  @backup_whobeatcsv  = @{ dclone \@whobeat_csv};
 }
 
 sub parse_duration {
