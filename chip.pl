@@ -1672,9 +1672,9 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v8.00           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v8.01           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v8.00           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v8.01           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
@@ -1942,7 +1942,8 @@ sub history {
   close OUTCSV;
 
   # Open log file
-  if ( $^O =~ /MSWin32/     ) { system("start \"$outfile_csv\"") }
+  #if ( $^O =~ /MSWin32/     ) { system("start \"$outfile_csv\"") }
+  if ( $^O =~ /MSWin32/     ) { system ("\"$outfile_csv\"") }
   if ( $^O =~ /next|darwin/ ) { system("open $outfile_csv") }
   print "Please wait...\n";
   sleep 2;
