@@ -65,6 +65,7 @@ my $DATE = "$hour".':'."$min".":$sec"."_$abbr[$mon]"."_$mday"."_$year";
 
 # Set files
 my $fargo_storage_file = 'fargo.txt';
+my $tournament_name = 'tournament_name.txt';
 my $chip_rating_storage_file = 'chip_rating.txt';
 my $player_db   = 'chip_player.txt';
 my $namestxt    = 'names.txt';
@@ -80,16 +81,18 @@ if ( $^O =~ /MSWin32/ ) {
 
 
   if ( exists $ENV{'LOCALAPPDATA'} ) {
-    my $local_app_data = $ENV{'LOCALAPPDATA'};
-    $fargo_storage_file = "$local_app_data\\$fargo_storage_file";
+    my $local_app_data        = $ENV{'LOCALAPPDATA'};
+    $fargo_storage_file       = "$local_app_data\\$fargo_storage_file";
     $chip_rating_storage_file = "$local_app_data\\$chip_rating_storage_file";
-    $player_db = "$local_app_data\\$player_db";
-    $namestxt  = "$local_app_data\\$namestxt";
+    $player_db                = "$local_app_data\\$player_db";
+    $namestxt                 = "$local_app_data\\$namestxt";
+    $tournament_name          = "$local_app_data\\$tournament_name";
   } else {
-    $fargo_storage_file = $profile . "\\desktop\\$fargo_storage_file";
+    $fargo_storage_file       = $profile . "\\desktop\\$fargo_storage_file";
     $chip_rating_storage_file = $profile . "\\desktop\\$chip_rating_storage_file";
-    $player_db = $profile . "\\desktop\\$player_db";
-    $namestxt  = $profile . "\\desktop\\$namestxt";
+    $player_db                = $profile . "\\desktop\\$player_db";
+    $namestxt                 = $profile . "\\desktop\\$namestxt";
+    $tournament_name          = $profile . "\\desktop\\$tournament_name";
   }
   $windows_ver = `ver`;
 }
@@ -138,6 +141,7 @@ my $undo_last_loser_count = 0;   # Keep track of level of undo
 my $undo_fargo_id;
 my $undo_won;
 my $undo_chips;
+my $tourney_name;
 my $shuffle_mode_undo = 'off';
 my $shuffle_mode_undo2 = 'off';
 my $shuffle_mode_undo3 = 'off';
@@ -209,6 +213,12 @@ if ( -e $namestxt ) {
   }
   $tables{'6'}=1;
   $tables{'5'}=1;
+}
+if ( -e $tournament_name ) {
+  my $filename = $tournament_name;
+  open my $handle, '<', $filename;
+  $tourney_name = <$handle>;
+  close $handle;
 }
 
 # print Lightning Chip Logo
@@ -1672,9 +1682,9 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v8.01           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v8.40           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v8.01           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v8.40           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
@@ -1812,27 +1822,36 @@ sub switch_colors {
 }
 
 sub game_and_event {
+  my $example_name;
   while(1){
     header();
-    print "Please enter Event Name:\n";
-    print "\nExample: Priscilla's Nine Ball Chip Tourney\n\n";
+    if ( $tourney_name =~ /\w/ ) {
+      $example_name = $tourney_name;
+    } else {
+      $example_name = 'The Colello Classic';
+    }
+    print "Please enter Event Name or hit Enter for \"$example_name\":\n";
     print color('bold cyan') unless ( $Colors eq 'off');
     chomp($event = <STDIN>);
     if ($event =~ /\w/ ) {
       last;
     } else {
-      $event = "The Martin Colello Classic";
+      $event = $example_name;
       last;
     } 
   }
 
+  chomp($event);
+  open (TOURNEYNAME, '>',$tournament_name);
+  print TOURNEYNAME "$event";
+  close TOURNEYNAME;
+
   print color('bold white') unless ( $Colors eq 'off');
-  print "\n\nPlease enter game type:\n";
-  print "\nExample: Nine Ball\n\n";
+  print "\n\nPlease enter game type or hit Enter for \"Nine Ball\":\n";
   print color('bold cyan') unless ( $Colors eq 'off');
   chomp($game = <STDIN>);
+  if ( $game !~ /\w/ ) { $game = 'Nine Ball' }
   print color('bold white') unless ( $Colors eq 'off');
-  chomp($event);
   chomp($game);
 
   my @chip_rating_storage;
