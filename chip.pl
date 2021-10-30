@@ -42,6 +42,10 @@
 # Add five levels of undo #
 # October 2021            #
 #                         #
+# Store tournament name   #
+# and create xls report   #
+# October 2021            #
+#                         #
 ###########################
 
 use strict;
@@ -51,6 +55,7 @@ use Term::ANSIColor;
 use POSIX;
 use Array::Columnize;
 use Storable qw/dclone/;
+use Excel::Writer::XLSX;
 use if $^O eq "MSWin32", "Win32::Sound";
 $SIG{INT} = 'IGNORE';
 
@@ -67,17 +72,19 @@ my $DATE = "$hour".':'."$min".":$sec"."_$abbr[$mon]"."_$mday"."_$year";
 my $fargo_storage_file = 'fargo.txt';
 my $tournament_name = 'tournament_name.txt';
 my $chip_rating_storage_file = 'chip_rating.txt';
-my $player_db   = 'chip_player.txt';
-my $namestxt    = 'names.txt';
-my $desktop     = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
-my $desktop_csv = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
-my $windows_ver = 'none';
+my $player_db    = 'chip_player.txt';
+my $namestxt     = 'names.txt';
+my $desktop      = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
+my $desktop_csv  = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
+my $outfile_xlsx = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.xlsx';
+my $windows_ver  = 'none';
 
 if ( $^O =~ /MSWin32/ ) {
   chomp(my $profile = `set userprofile`);
-  $profile     =~ s/userprofile=//i;
-  $desktop     = $profile . "\\desktop\\$desktop";
-  $desktop_csv = $profile . "\\desktop\\$desktop_csv";
+  $profile      =~ s/userprofile=//i;
+  $desktop      = $profile . "\\desktop\\$desktop";
+  $desktop_csv  = $profile . "\\desktop\\$desktop_csv";
+  $outfile_xlsx = $profile . "\\desktop\\$outfile_xlsx";
 
 
   if ( exists $ENV{'LOCALAPPDATA'} ) {
@@ -286,8 +293,11 @@ while(1) {
       history();
 
       # Open log file
-      if ( $^O =~ /MSWin32/     ) { system("start notepad.exe \"$desktop\"") }
+      #if ( $^O =~ /MSWin32/     ) { system("start notepad.exe \"$desktop\"") }
+      #if ( $^O =~ /MSWin32/     ) { system (1,"\"$desktop\"") }
       if ( $^O =~ /next|darwin/ ) { system("open $desktop") }
+      print "\n\nThank you for using Lightning Chip Tourney!\n\n";
+      sleep 3;
       exit;
     }
   }
@@ -813,7 +823,7 @@ sub loser {
       } 
     }
 
-    if ( $extra_tables_count > 2 ) {
+    if ( $extra_tables_count > 1 ) {
         $extra_players = 'yes';
     }
 
@@ -1682,9 +1692,9 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v8.40           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v8.60           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v8.40           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v8.60           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
@@ -1945,6 +1955,7 @@ sub history {
   open (OUTCSV, '>',$outfile_csv);
   print OUTCSV "Player #1,,,Player #2,\n";
   print OUTCSV "Fargo ID,Player Name,Score,Fargo ID,Player Name,Score,Date,Game,Table,Event\n";
+
   foreach(@whobeat_csv) {
     my $line       = $_;
     my @split      = split /SPLIT/, $line;
@@ -1954,18 +1965,40 @@ sub history {
     my $winner_id  = $split[3];
     my $loser_id   = $split[4];
     my $date_lost  = $split[5];
-    #$winner =~ s/\(\d+\)//g;
-    #$loser  =~ s/\(\d+\)//g;
+
     print OUTCSV "$winner_id,$winner,1,$loser_id,$loser,0,$date_lost,$game,$table,$event\n";
   }
+
   close OUTCSV;
 
+  open( TABFILE, "$outfile_csv" ) or die "$outfile_csv : $!";
+ 
+  my $workbook  = Excel::Writer::XLSX->new( $outfile_xlsx );
+  my $worksheet = $workbook->add_worksheet();
+ 
+  # Row and column are zero indexed
+  my $row = 0;
+ 
+  while ( <TABFILE> ) {
+    chomp;
+ 
+    # Split on single tab
+    my @fields = split( ',', $_ );
+ 
+    my $col = 0;
+    for my $token ( @fields ) {
+        $worksheet->write( $row, $col, $token );
+        $col++;
+    }
+    $row++;
+  }
+ 
+  $workbook->close();
+
   # Open log file
-  #if ( $^O =~ /MSWin32/     ) { system("start \"$outfile_csv\"") }
-  if ( $^O =~ /MSWin32/     ) { system ("\"$outfile_csv\"") }
+  #if ( $^O =~ /MSWin32/     ) { system ("\"$outfile_csv\"") }
+  if ( $^O =~ /MSWin32/     ) { system (1,"\"$outfile_xlsx\"") }
   if ( $^O =~ /next|darwin/ ) { system("open $outfile_csv") }
-  print "Please wait...\n";
-  sleep 2;
 }
 
 sub get_start_chips {
