@@ -1,5 +1,7 @@
 Lightning Chip Tourney           --by Martin Colello
 
+![Video Demo](https://youtu.be/cDDldyLX9ng)
+
 Read the text below, and then click Wiki above for a quick description of the software commands.
 
 Now version 7.25 with Undo option, flip for break, and a match timer!
