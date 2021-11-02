@@ -584,7 +584,21 @@ sub draw_screen {
   # Print menu
   print "\n\n";
   if ( $tourney_running eq 0 ) {
-    #print "(n)ew player (d)elete player (a)dd table (r)emove table (g)ive chip (t)ake chip (q)uit program (b)egin tourney!\n";
+    my $tables_in_use;
+    my @tables_in_use;
+    foreach(keys(%tables)) {
+      push @tables_in_use, $_;
+    }
+    @tables_in_use = sort {$a <=> $b } @tables_in_use;
+    foreach(@tables_in_use) {
+      $tables_in_use = "$tables_in_use,$_";
+    }
+    if ( $tables_in_use =~ /\w/ ) {
+      print color('bold cyan') unless ( $Colors eq 'off');
+      $tables_in_use =~ s/^,//g;
+      print "Tables numbers in use: $tables_in_use\n\n";
+    }
+    print color('bold white') unless ( $Colors eq 'off');
     print "(";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "N";
@@ -1692,9 +1706,9 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v8.60           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v8.70           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v8.60           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v8.70           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
