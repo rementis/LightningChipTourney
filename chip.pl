@@ -46,6 +46,9 @@
 # and create xls report   #
 # October 2021            #
 #                         #
+# Add Send to Undo        #
+# November 2021           #
+#                         #
 ###########################
 
 use strict;
@@ -154,6 +157,11 @@ my $shuffle_mode_undo2 = 'off';
 my $shuffle_mode_undo3 = 'off';
 my $shuffle_mode_undo4 = 'off';
 my $shuffle_mode_undo5 = 'off';
+my $send1 = "\n\n";
+my $send2 = "\n\n";
+my $send3 = "\n\n";
+my $send4 = "\n\n";
+my $send5 = "\n\n";
 my %backup_players;
 my %backup_players2;
 my %backup_players3;
@@ -923,7 +931,7 @@ sub undo_last_loser {
     $undo_last_loser_count = 1;
     print "Reverting level one...\n";
     sleep 2;
-    $send = "\n\n";
+    $send = $send1;
     return;
   }
   if ( $undo_last_loser_count eq 1 ) {
@@ -937,7 +945,7 @@ sub undo_last_loser {
     $undo_last_loser_count = 2;
     print "Reverting level two...\n";
     sleep 2;
-    $send = "\n\n";
+    $send = $send2;
     return;
   }
   if ( $undo_last_loser_count eq 2 ) {
@@ -951,7 +959,7 @@ sub undo_last_loser {
     $undo_last_loser_count = 3;
     print "Reverting level three...\n";
     sleep 2;
-    $send = "\n\n";
+    $send = $send3;
     return;
   }
   if ( $undo_last_loser_count eq 3 ) {
@@ -965,7 +973,7 @@ sub undo_last_loser {
     $undo_last_loser_count = 4;
     print "Reverting level four...\n";
     sleep 2;
-    $send = "\n\n";
+    $send = $send4;
     return;
   }
   if ( $undo_last_loser_count eq 4 ) {
@@ -979,7 +987,7 @@ sub undo_last_loser {
     $undo_last_loser_count = 5;
     print "Reverting level five...\n";
     sleep 2;
-    $send = "\n\n";
+    $send = $send5;
     return;
   }
   if ( $undo_last_loser_count eq 5 ) {
@@ -1706,9 +1714,9 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v8.70           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v8.90           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v8.70           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v8.90           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
@@ -2071,6 +2079,7 @@ sub forfeit {
 sub backup {
   # Take backup of status in case we want to undo
   $shuffle_mode_undo5 = $shuffle_mode_undo4;
+  $send5 = $send4;
   %backup_players5    = %{ dclone \%backup_players4 };
   %backup_tables5     = %{ dclone \%backup_tables4 };
   @backup_dead5       = @{ dclone \@backup_dead4};
@@ -2078,7 +2087,8 @@ sub backup {
   @backup_whobeat5    = @{ dclone \@backup_whobeat4};
   @backup_whobeatcsv5 = @{ dclone \@backup_whobeatcsv4};
 
-  $shuffle_mode_undo4 = $shuffle_mode_undo2;
+  $shuffle_mode_undo4 = $shuffle_mode_undo3;
+  $send4 = $send3;
   %backup_players4    = %{ dclone \%backup_players3 };
   %backup_tables4     = %{ dclone \%backup_tables3 };
   @backup_dead4       = @{ dclone \@backup_dead3};
@@ -2087,6 +2097,7 @@ sub backup {
   @backup_whobeatcsv4 = @{ dclone \@backup_whobeatcsv3};
   
   $shuffle_mode_undo3 = $shuffle_mode_undo2;
+  $send3 = $send2;
   %backup_players3    = %{ dclone \%backup_players2 };
   %backup_tables3     = %{ dclone \%backup_tables2 };
   @backup_dead3       = @{ dclone \@backup_dead2};
@@ -2095,6 +2106,7 @@ sub backup {
   @backup_whobeatcsv3 = @{ dclone \@backup_whobeatcsv2};
 
   $shuffle_mode_undo2 = $shuffle_mode_undo;
+  $send2 = $send1;
   %backup_players2    = %{ dclone \%backup_players };
   %backup_tables2     = %{ dclone \%backup_tables };
   @backup_dead2       = @{ dclone \@backup_dead};
@@ -2103,6 +2115,7 @@ sub backup {
   @backup_whobeatcsv2 = @{ dclone \@backup_whobeatcsv};
 
   $shuffle_mode_undo  = $shuffle_mode;
+  $send1 = $send;
   %backup_players     = %{ dclone \%players };
   %backup_tables      = %{ dclone \%tables };
   @backup_dead        = @{ dclone \@dead};
