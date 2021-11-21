@@ -118,11 +118,6 @@ my $master_number_of_players = 0;
 my $outfile     = "$desktop";
 my $outfile_csv = "$desktop_csv";
 
-#print "outfile is $outfile\n\n";
-#print "outfile_csv is $outfile_csv\n\n";
-
-#sleep 15;
-
 # Open log file
 open (OUTFILE,'>',$outfile) or die "Cannot open results file: $!";
 print OUTFILE "$abbr[$mon]".' '."$mday".' '."$year"."\n";
@@ -152,46 +147,54 @@ my $undo_fargo_id;
 my $undo_won;
 my $undo_chips;
 my $tourney_name;
-my $shuffle_mode_undo = 'off';
-my $shuffle_mode_undo2 = 'off';
-my $shuffle_mode_undo3 = 'off';
-my $shuffle_mode_undo4 = 'off';
-my $shuffle_mode_undo5 = 'off';
+my $shuffle_mode_undo    = 'off';
+my $shuffle_mode_undo2   = 'off';
+my $shuffle_mode_undo3   = 'off';
+my $shuffle_mode_undo4   = 'off';
+my $shuffle_mode_undo5   = 'off';
+my $shuffle_mode_restart = 'off';
 my $send1 = "\n\n";
 my $send2 = "\n\n";
 my $send3 = "\n\n";
 my $send4 = "\n\n";
 my $send5 = "\n\n";
+my $send_restart = "\n\n";
 my %backup_players;
 my %backup_players2;
 my %backup_players3;
 my %backup_players4;
 my %backup_players5;
+my %backup_players_restart;
 my %backup_tables;
 my %backup_tables2;
 my %backup_tables3;
 my %backup_tables4;
 my %backup_tables5;
+my %backup_tables_restart;
 my @backup_dead;
 my @backup_dead2;
 my @backup_dead3;
 my @backup_dead4;
 my @backup_dead5;
+my @backup_dead_restart;
 my @backup_stack;
 my @backup_stack2;
 my @backup_stack3;
 my @backup_stack4;
 my @backup_stack5;
+my @backup_stack_restart;
 my @backup_whobeat;
 my @backup_whobeat2;
 my @backup_whobeat3;
 my @backup_whobeat4;
 my @backup_whobeat5;
+my @backup_whobeat_restart;
 my @backup_whobeatcsv;
 my @backup_whobeatcsv2;
 my @backup_whobeatcsv3;
 my @backup_whobeatcsv4;
 my @backup_whobeatcsv5;
+my @backup_whobeatcsv_restart;
 my $chips_8 = 461;
 my $chips_7 = 521;
 my $chips_6 = 581;
@@ -257,7 +260,7 @@ if ( $^O =~ /linux/ ) {
   }
 }
 
-sleep 2;
+sleep 1;
 
 game_and_event();
 
@@ -1041,6 +1044,7 @@ sub start_tourney {
 
     # Assign two players per table from the stack
     assign();
+    restart_backup();# Take backup in case you want to restart entire tourney
   }
 }
 
@@ -1547,7 +1551,7 @@ sub delete_table {
 sub quit_program {
   header();
   print "\nQuitting will NOT save tourney data!!!\n";
-  print "Are you sure?\n";
+  print "Hit Y to quit, hit R to restart entire tourney.\n";
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
@@ -1566,6 +1570,8 @@ sub quit_program {
       system("open $desktop");
     }
     exit;
+  } elsif ( $yesorno eq 'r' ) {
+	restart();
   } else {
     return
   } 
@@ -1583,12 +1589,14 @@ sub yesorno {
       $choice = uc ( $key);
       $done = 1 if $choice eq 'Y';
       $done = 1 if $choice eq 'N';
+      $done = 1 if $choice eq 'R';
       $done = 1 if $any eq 'any';
     }
   }
   ReadMode 0;
   if ( $choice eq 'Y' ) { return 'y' }
   if ( $choice eq 'N' ) { return 'n' }
+  if ( $choice eq 'R' ) { return 'r' }
 }
 
 sub clear_screen {
@@ -1597,10 +1605,11 @@ sub clear_screen {
 }
 
 sub shuffle_stack {
+  my $skip_yes = shift;
   header();
   my $check_if_auto=shift;
   my $yesorno;
-  if ( $check_if_auto ne 'AUTO' ) {
+  if (( $check_if_auto ne 'AUTO' ) && ( $skip_yes ne 'yes' )) {
     print "\n\n\n\n\nThis will reshuffle ALL players including at current tables!!!\n";
     print "Are you sure?\n";
     $yesorno = yesorno();
@@ -2122,6 +2131,45 @@ sub backup {
   @backup_stack       = @{ dclone \@stack};
   @backup_whobeat     = @{ dclone \@whobeat};
   @backup_whobeatcsv  = @{ dclone \@whobeat_csv};
+}
+
+sub restart_backup {
+  $shuffle_mode_restart      = $shuffle_mode;
+  $send_restart              = $send;
+  %backup_players_restart    = %{ dclone \%players };
+  %backup_tables_restart     = %{ dclone \%tables };
+  @backup_dead_restart       = @{ dclone \@dead};
+  @backup_stack_restart      = @{ dclone \@stack};
+  @backup_whobeat_restart    = @{ dclone \@whobeat};
+  @backup_whobeatcsv_restart = @{ dclone \@whobeat_csv};
+}
+
+sub restart {
+  # Restart entire tourney
+  
+  print "\nRestart ENTIRE tourney!\n\n";
+  print "Are you sure?\n";
+  my $yesorno = yesorno();
+  chomp($yesorno);
+  $yesorno=lc($yesorno);
+  if ( $yesorno ne 'y' ) { 
+    print "Action cancelled.\n";
+    sleep 2;
+    return;
+  }
+
+  %players      = %{ dclone \%backup_players_restart};
+  %tables       = %{ dclone \%backup_tables_restart};
+  @dead         = @{ dclone \@backup_dead_restart};
+  @stack        = @{ dclone \@backup_stack_restart};
+  @whobeat      = @{ dclone \@backup_whobeat_restart};
+  @whobeat_csv  = @{ dclone \@backup_whobeatcsv_restart};
+  $shuffle_mode = $shuffle_mode_restart;
+  $send = $send_restart;
+  shuffle_stack('yes');
+  print "\n\nTourney restarted.\n\n";
+  sleep 2;
+  return;
 }
 
 sub parse_duration {
