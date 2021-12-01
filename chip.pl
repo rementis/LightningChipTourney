@@ -1,55 +1,38 @@
 #!/usr/bin/perl
 
-###########################
-#                         #
-# Lightening Chip Tourney #
-#     Martin Colello      #
-#   April/May/June 2018   #
-#                         #
-# Add move table Aug 2018 #
-#                         #
-# Add player db Oct 2018  #
-#                         #
-# Auto shuffle when only  #
-# two players left        #
-# May 2019                #
-#                         #
-# Add ability to undo     #
-# most recent win         #
-# June 2020               #
-#                         #
-# Add time tracking       #
-# June 2021               #
-#                         #
-# Add split screen        #
-# June 2021               #
-#                         #
-# Fix too long player     #
-# name issue              #
-# July 2021               #
-#                         #
-# Fix fargo missing from  #
-# log issue               # 
-# Aug 2021                #
-#                         #
-# Add Forfeit subroutine  #
-# September 2021          #
-#                         #
-# Fix issue with user     #
-# containing spaces       #
-# September 2021          #
-#                         #
-# Add five levels of undo #
-# October 2021            #
-#                         #
-# Store tournament name   #
-# and create xls report   #
-# October 2021            #
-#                         #
-# Add Send to Undo        #
-# November 2021           #
-#                         #
-###########################
+########################################################
+#                                                      #
+# Lightening Chip Tourney                              #
+#     Martin Colello                                   #
+#   April/May/June 2018                                #
+#                                                      #
+# Add move table Aug 2018                              #
+#                                                      #
+# Add player db Oct 2018                               #
+#                                                      #
+# Auto shuffle when only two players left May 2019     #
+#                                                      #
+# Add ability to undo most recent win June 2020        #
+#                                                      #
+# Add time tracking June 2021                          #
+#                                                      #
+# Add split screen June 2021                           #
+#                                                      #
+# Fix too long player name issue July 2021             #
+#                                                      #
+# Fix fargo missing from log issue Aug 2021            #
+#                                                      #
+# Add Forfeit subroutine September 2021                #
+#                                                      #
+# Fix issue with user containing spaces Sep 2021       #
+#                                                      #
+# Add five levels of undo Oct 2021                     #
+#                                                      #
+# Store tournament name and create xls report Oct 2021 #
+#                                                      #
+# Add Send to Undo November 2021                       #
+#                                                      #
+########################################################
 
 use strict;
 use Term::ReadKey;
@@ -543,7 +526,7 @@ sub draw_screen {
   #print color($color) unless ( $Colors eq 'off');;
 
   print "\n";
-  @dead = sort(@dead);
+  #@dead = sort(@dead);
   my @dead_display;
 
 
@@ -1723,9 +1706,9 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v8.90           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.00           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v8.90           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v9.00           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
