@@ -353,6 +353,12 @@ while(1) {
 }# End of MAIN LOOP
 
 sub draw_screen {
+
+  if ( $tourney_running eq 0 ) { 
+    my @number_of_players = keys(%players);
+    my $number_of_players = @number_of_players;
+    $master_number_of_players = $number_of_players;
+  }
   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
   if ( $min < 10 ) { $min = "0$min" }
   if ( $sec < 10 ) { $sec = "0$sec" }
@@ -1706,9 +1712,9 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.00           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.01           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v9.00           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v9.01           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
