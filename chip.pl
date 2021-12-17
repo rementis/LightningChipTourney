@@ -42,6 +42,7 @@ use POSIX;
 use Array::Columnize;
 use Storable qw/dclone/;
 use Excel::Writer::XLSX;
+use File::Path qw( make_path );
 use if $^O eq "MSWin32", "Win32::Sound";
 $SIG{INT} = 'IGNORE';
 
@@ -55,19 +56,29 @@ my @abbr = qw(January February March April May June July August September Octobe
 my $DATE = "$hour".':'."$min".":$sec"."_$abbr[$mon]"."_$mday"."_$year";
 
 # Set files
-my $fargo_storage_file = 'fargo.txt';
-my $tournament_name = 'tournament_name.txt';
+my $fargo_storage_file       = 'fargo.txt';
+my $tournament_name          = 'tournament_name.txt';
 my $chip_rating_storage_file = 'chip_rating.txt';
-my $player_db    = 'chip_player.txt';
-my $namestxt     = 'names.txt';
-my $desktop      = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
-my $desktop_csv  = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
-my $outfile_xlsx = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.xlsx';
-my $windows_ver  = 'none';
+my $player_db                = 'chip_player.txt';
+my $namestxt                 = 'names.txt';
+my $desktop                  = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
+my $desktop_csv              = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
+my $outfile_xlsx             = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.xlsx';
 
 if ( $^O =~ /MSWin32/ ) {
   chomp(my $profile = `set userprofile`);
-  $profile      =~ s/userprofile=//i;
+  $profile          =~ s/userprofile=//i;
+  my $homedir       = $profile . "\\desktop";
+
+  # If desktop folder exists do nothing, if not then create it
+  if ( -d $homedir ) {
+    print "Homedir $homedir exists.\n";
+  } else {
+    make_path($homedir);
+  }
+
+  exit;
+
   $desktop      = $profile . "\\desktop\\$desktop";
   $desktop_csv  = $profile . "\\desktop\\$desktop_csv";
   $outfile_xlsx = $profile . "\\desktop\\$outfile_xlsx";
@@ -87,7 +98,6 @@ if ( $^O =~ /MSWin32/ ) {
     $namestxt                 = $profile . "\\desktop\\$namestxt";
     $tournament_name          = $profile . "\\desktop\\$tournament_name";
   }
-  $windows_ver = `ver`;
 }
 
 
@@ -117,9 +127,6 @@ my @dead;                        # Hold list of players with zero chips
 my @whobeat;                     # Record who beat who
 my @whobeat_csv;                 # Record who beat who for spreadsheet
 my $Colors = 'on';               # Keep track if user wants color display turned off
-my $most_recent_loser = 'none';  # Keep track of who lost recently for stack manipulation
-my $most_recent_table = 'none';  # Keep track table for undo
-my $most_recent_winner = 'none'; # Keep track of who lost recently for stack manipulation
 my $player_standup = 'none';     # For undo tracking
 my $game = 'none';               # Store game type (8/9/10 ball)
 my $event;                       # Store Event name (Martin's Chip Tourney etc)
@@ -782,16 +789,14 @@ sub loser {
 
   if ( $players{$player}{'table'} eq 'none' ) {
     print "Error, this player was not at a table.\n";
-    sleep 5;
+    sleep 3;
     return;
   }
 
-    $most_recent_loser = $player;
     $players{$player}{'chips'}--; # Take a chip from the loser
 
     # Get table number player lost on
     my $table = $players{$player}{'table'};
-    $most_recent_table = $table;
 
     # Set loser's table to 'none'
     $players{$player}{'table'} = 'none';
@@ -808,7 +813,6 @@ sub loser {
 	  $players{$player}{'time_start'}            = 0;
 	  $players{$possible_opponent}{'time_start'} = 0;
 	  $opponent = $possible_opponent;
-          $most_recent_winner = $opponent;
 	  push @whobeat, $printit;
 	  push @whobeat_csv, "$possible_opponent"."SPLIT"."$player"."SPLIT"."$players{$possible_opponent}{'table'}"."SPLIT"."$players{$possible_opponent}{'fargo_id'}"."SPLIT"."$players{$player}{'fargo_id'}"."SPLIT"."$DATE";
         }	
@@ -1525,12 +1529,6 @@ sub delete_table {
         unshift @stack, $tempplayer;
       }
     }
-    #if ( $players{$most_recent_winner}{'table'} eq $table ) {
-    #  $players{$most_recent_winner}{'table'} = 'none';
-    #  @stack=((grep $_ ne $most_recent_winner, @stack), $most_recent_winner);
-    #  my $tempplayer = pop @stack;
-    #  unshift @stack, $tempplayer;
-    #}
     return;
   } else {
     return
@@ -1712,9 +1710,9 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.01           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.02           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v9.01           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v9.02           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
