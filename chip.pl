@@ -77,8 +77,6 @@ if ( $^O =~ /MSWin32/ ) {
     make_path($homedir);
   }
 
-  exit;
-
   $desktop      = $profile . "\\desktop\\$desktop";
   $desktop_csv  = $profile . "\\desktop\\$desktop_csv";
   $outfile_xlsx = $profile . "\\desktop\\$outfile_xlsx";
@@ -1710,9 +1708,9 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.02           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.03           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v9.02           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print "\nLIGHTNING CHIP TOURNEY v9.03           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
