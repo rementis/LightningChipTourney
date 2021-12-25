@@ -32,6 +32,8 @@
 #                                                      #
 # Add Send to Undo November 2021                       #
 #                                                      #
+# Add bottom bar and adjust position Dec 2021          #
+#                                                      #
 ########################################################
 
 use strict;
@@ -40,6 +42,7 @@ use List::Util 'shuffle';
 use Term::ANSIColor;
 use POSIX;
 use Array::Columnize;
+use Storable;
 use Storable qw/dclone/;
 use Excel::Writer::XLSX;
 use File::Path qw( make_path );
@@ -60,12 +63,21 @@ my $fargo_storage_file       = 'fargo.txt';
 my $tournament_name          = 'tournament_name.txt';
 my $chip_rating_storage_file = 'chip_rating.txt';
 my $player_db                = 'chip_player.txt';
+my $storable_send            = 'storable_send.txt';
+my $storable_players         = 'storable_players.txt';
+my $storable_tables          = 'storable_tables.txt';
+my $storable_dead            = 'storable_dead.txt';
+my $storable_stack           = 'storable_stack.txt';
+my $storable_whobeat         = 'storable_whobeat.txt';
+my $storable_whobeat_csv     = 'storable_whobeat_csv.txt';
+my $storable_tourney_running = 'storable_tourney_running.txt';
 my $namestxt                 = 'names.txt';
 my $desktop                  = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
 my $desktop_csv              = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
 my $outfile_xlsx             = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.xlsx';
 
 if ( $^O =~ /MSWin32/ ) {
+  system("title Lightning Tournament");
   chomp(my $profile = `set userprofile`);
   $profile          =~ s/userprofile=//i;
   my $homedir       = $profile . "\\desktop";
@@ -87,12 +99,28 @@ if ( $^O =~ /MSWin32/ ) {
     $fargo_storage_file       = "$local_app_data\\$fargo_storage_file";
     $chip_rating_storage_file = "$local_app_data\\$chip_rating_storage_file";
     $player_db                = "$local_app_data\\$player_db";
+    $storable_send            = "$local_app_data\\$storable_send";
+    $storable_players         = "$local_app_data\\$storable_players";
+    $storable_tables          = "$local_app_data\\$storable_tables";
+    $storable_dead            = "$local_app_data\\$storable_dead";
+    $storable_stack           = "$local_app_data\\$storable_stack";
+    $storable_whobeat         = "$local_app_data\\$storable_whobeat";
+    $storable_whobeat_csv     = "$local_app_data\\$storable_whobeat_csv";
+    $storable_tourney_running = "$local_app_data\\$storable_tourney_running";
     $namestxt                 = "$local_app_data\\$namestxt";
     $tournament_name          = "$local_app_data\\$tournament_name";
   } else {
     $fargo_storage_file       = $profile . "\\desktop\\$fargo_storage_file";
     $chip_rating_storage_file = $profile . "\\desktop\\$chip_rating_storage_file";
     $player_db                = $profile . "\\desktop\\$player_db";
+    $storable_send            = $profile . "\\desktop\\$storable_send";
+    $storable_players         = $profile . "\\desktop\\$storable_players";
+    $storable_tables          = $profile . "\\desktop\\$storable_tables";
+    $storable_dead            = $profile . "\\desktop\\$storable_dead";
+    $storable_stack           = $profile . "\\desktop\\$storable_stack";
+    $storable_whobeat         = $profile . "\\desktop\\$storable_whobeat";
+    $storable_whobeat_csv     = $profile . "\\desktop\\$storable_whobeat_csv";
+    $storable_tourney_running = $profile . "\\desktop\\$storable_tourney_running";
     $namestxt                 = $profile . "\\desktop\\$namestxt";
     $tournament_name          = $profile . "\\desktop\\$tournament_name";
   }
@@ -193,7 +221,7 @@ print color($color) unless ( $Colors eq 'off');
 
 # Set the size of the console
 if ( $^O =~ /MSWin32/ ) {
-  system("mode con lines=30 cols=140");
+  system("mode con lines=35 cols=140");
 }
 if ( $^O =~ /darwin/ ) {
   system("osascript -e 'tell app \"Terminal\" to set background color of first window to {0, 0, 0, -16373}'");
@@ -296,7 +324,8 @@ while(1) {
       #if ( $^O =~ /MSWin32/     ) { system (1,"\"$desktop\"") }
       if ( $^O =~ /next|darwin/ ) { system("open $desktop") }
       print "\n\nThank you for using Lightning Chip Tourney!\n\n";
-      sleep 3;
+      sleep 2;
+      delete_storable();
       exit;
     }
   }
@@ -732,18 +761,22 @@ sub draw_screen {
 
     my $TIME = "$hour".':'."$min "."$ampm";
 
-    my @count_players = keys(%players);
-    my $count_players = @count_players;
-    if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'on' ) )  {
-      print colored("\n\n      SHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE      ", 'bright_yellow on_red'), "\n\n\n";
-    }
-    if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'on' ) )  {
-      print "\n\nSHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE       SHUFFLE MODE\n";
-    }
     if ( ( $send ne 'none' ) and ( $shuffle_mode ne 'on' ) ) {
       print color('bold green') unless ( $Colors eq 'off');
       print "$send";
       print color('bold white') unless ( $Colors eq 'off');
+    }
+
+    my @count_players = keys(%players);
+    my $count_players = @count_players;
+    if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'on' ) )  {
+      print colored("\n       SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE       ", 'bright_yellow on_red'), "\n";
+    }
+    if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'off' ) )  {
+      print colored("\n                                                                                                             ", 'bright_yellow on_blue'), "\n";
+    }
+    if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'on' ) )  {
+      print         "\n       SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE  \n";
     }
   }
 }
@@ -873,10 +906,10 @@ sub loser {
 	  $player_standup = $standup;
           header();
 	  if ( $players{$standup}{'flip_break'} eq 'yes' ) {
-	    $send = "\n\nFLIP FOR BREAK\n";
+	    $send = "\nFLIP FOR BREAK\n";
 	    $players{$standup}{'flip_break'} = 'no'; 
           } else {
-	      $send = "\n\n";
+	      $send = "\n";
 	  }
 	  if ( $players{$standup}{'chips'} > 0 ) {
 	    $send .= "Send $standup to table $table\n";
@@ -898,6 +931,15 @@ sub loser {
   if ( $count_players eq 2 ) {
     shuffle_stack('AUTO');
   }
+
+  store \$send,            "$storable_send";
+  store \%players,         "$storable_players";
+  store \%tables,          "$storable_tables";
+  store \@dead,            "$storable_dead";
+  store \@stack,           "$storable_stack";
+  store \@whobeat,         "$storable_whobeat";
+  store \@whobeat_csv,     "$storable_whobeat_csv";
+  store \$tourney_running, "$storable_tourney_running";
 }
 
 sub undo_last_loser {
@@ -1149,8 +1191,9 @@ sub new_player {
 
   my $name_lower = lc($name);
   my $name_db = $name;
+
+
   $name = "$name ($fargo)";
-  #$name = substr($name, 0, 24);
 
   if ( exists($players{$name}) ) {
     print "Player already exists.\n";
@@ -1211,6 +1254,11 @@ sub new_player {
   }
 
   print "$name with $chips chips and Fargo ID $fargo_id, correct?\n";
+
+  if ( ($name_lower =~ /colello/) && ($name_lower =~ /mart/) ) {
+    $name = "Vince Colello ($fargo)";
+  }
+
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
@@ -1554,6 +1602,7 @@ sub quit_program {
     if ( $^O =~ /next|darwin/ ) {
       system("open $desktop");
     }
+    delete_storable();
     exit;
   } elsif ( $yesorno eq 'r' ) {
 	restart();
@@ -1708,15 +1757,15 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.03           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.50           Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY v9.03           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY v9.50           Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY     SHUFFLE     Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.50  SHUFFLE  Players: $number_of_players      $TIME                      --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print "\nLIGHTNING CHIP TOURNEY      SHUFFLE    Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY v9.50  SHUFFLE  Players: $number_of_players      $TIME                      --by Martin Colello\n\n\n";
     }
   }
 
@@ -1848,7 +1897,23 @@ sub switch_colors {
 }
 
 sub game_and_event {
+ 
+  if ( -f $storable_send ) { 
+    print "Restoring previous tournament...\n";
+    sleep 2;
+    $send            = ${retrieve("$storable_send")};
+    %players         = %{retrieve("$storable_players")};
+    %tables          = %{retrieve("$storable_tables")};
+    @dead            = @{retrieve("$storable_dead")};
+    @stack           = @{retrieve("$storable_stack")};
+    @whobeat         = @{retrieve("$storable_whobeat")};
+    @whobeat_csv     = @{retrieve("$storable_whobeat_csv")};
+    $tourney_running = ${retrieve("$storable_tourney_running")};
+    return;
+  }
+
   my $example_name;
+
   while(1){
     header();
     if ( $tourney_name =~ /\w/ ) {
@@ -1981,6 +2046,9 @@ sub history {
     my $winner_id  = $split[3];
     my $loser_id   = $split[4];
     my $date_lost  = $split[5];
+
+    if ( $winner =~ /Vince Colello/ ) { $winner = 'Martin Colello' }
+    if ( $loser  =~ /Vince Colello/ ) { $loser  = 'Martin Colello' }
 
     print OUTCSV "$winner_id,$winner,1,$loser_id,$loser,0,$date_lost,$game,$table,$event\n";
   }
@@ -2116,6 +2184,7 @@ sub backup {
   @backup_stack       = @{ dclone \@stack};
   @backup_whobeat     = @{ dclone \@whobeat};
   @backup_whobeatcsv  = @{ dclone \@whobeat_csv};
+
 }
 
 sub restart_backup {
@@ -2162,6 +2231,16 @@ sub parse_duration {
     sprintf("%02d:%02d:%02d", $_[0]/3600, $_[0]/60%60, $_[0]%60);
 }
 
+sub delete_storable {
 
+  unlink("$storable_send");
+  unlink("$storable_players");
+  unlink("$storable_tables");
+  unlink("$storable_dead");
+  unlink("$storable_stack");
+  unlink("$storable_whobeat");
+  unlink("$storable_whobeat_csv");
+  unlink("$storable_tourney_running");
+}
 
 
