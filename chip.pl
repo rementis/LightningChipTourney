@@ -877,7 +877,7 @@ sub loser {
     }
 
     # Delete table from tourney once it's no longer needed.
-    if (( $extra_players eq 'no' ) and ( $raw_tables_count > 2 )) {
+    if (( $extra_players eq 'no' ) and ( $raw_tables_count > 1 )) {
       my $remove_table = $players{$opponent}{'table'};
       $players{$opponent}{'table'} = 'none';
       header();
@@ -921,7 +921,7 @@ sub loser {
       }
     @stack=((grep $_ ne $player, @stack), $player);
     } 
-    if ( $number_of_players < 5 ) {
+    if ( $number_of_players < 4 ) {
       $shuffle_mode = 'on';
     }
     if ( $shuffle_mode eq 'on' ) {
@@ -929,7 +929,7 @@ sub loser {
     }
 
   if ( $count_players eq 2 ) {
-    shuffle_stack('AUTO');
+    shuffle_stack('yes');
   }
 
   store \$send,            "$storable_send";
@@ -1643,7 +1643,7 @@ sub shuffle_stack {
   header();
   my $check_if_auto=shift;
   my $yesorno;
-  if (( $check_if_auto ne 'AUTO' ) && ( $skip_yes ne 'yes' )) {
+  if (( $check_if_auto !~ /AUTO/ ) && ( $skip_yes ne 'yes' )) {
     print "\n\n\n\n\nThis will reshuffle ALL players including at current tables!!!\n";
     print "Are you sure?\n";
     $yesorno = yesorno();
