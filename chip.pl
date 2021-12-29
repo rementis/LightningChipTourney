@@ -1459,8 +1459,12 @@ sub new_player {
     open (OUT, '>',$player_db);
     foreach(@player_db){
       my $line = $_;
+      if ( $line =~ /^\s/ ) { next }
+      if ( $line !~ /^\w/ ) { next }
+      $line =~ s/([\w']+)/\u\L$1/g;#Capitalize first letter of each word
       print OUT "$line\n";
     }
+    close OUT;
   } 
 }
 
@@ -1847,6 +1851,9 @@ sub delete_players {
   foreach(@players){
     my $player = $_;
     if ( ($players{$player}{'chips'} eq 0) or ($player !~ /\w/) ) {
+      if ( $^O =~ /MSWin32/ ) {
+        Win32::Sound::Play("loser.wav");
+      }
       # Add player to dead player array
       push @dead, "$player: $players{$player}{'won'}" unless ( $player !~ /\w/ );
 
@@ -1926,15 +1933,15 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.60           Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.61           Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print         "\nLIGHTNING CHIP TOURNEY v9.60           Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY v9.61           Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.60  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.61  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print         "\nLIGHTNING CHIP TOURNEY v9.60  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY v9.61  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
     }
   }
 
@@ -2017,7 +2024,7 @@ sub print_menu_array_columns {
       $two   =~ s/:.*//g;
       $three =~ s/:.*//g;
       $four  =~ s/:.*//g;
-      my $printit = sprintf ( "%-30s %-30s %-30s %-30s", "$one", "$two", "$three","$four" );
+      my $printit = sprintf ( "%-30.30s %-30.30s %-30.30s %-30.30s", "$one", "$two", "$three","$four" );
       push @display,"$printit";
     } else {
       last;
@@ -2027,7 +2034,7 @@ sub print_menu_array_columns {
   my $num_display = 0;
   foreach(@display) {
     $num_display++;
-    if ( $num_display / 28 == 1 ) {
+    if ( $num_display % 28 == 0 ) {
       print "Hit ENTER to continue.\n";
       my $continue = <STDIN>;
     }
