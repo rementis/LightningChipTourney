@@ -51,12 +51,11 @@ use Storable;
 use Storable qw/dclone/;
 use Excel::Writer::XLSX;
 use Net::SFTP;
+use Net::Ping;
 use File::Path qw( make_path );
 use if $^O eq "MSWin32", "Win32::Sound";
 $SIG{INT} = 'IGNORE';
 
-
-#$sftp->get("foo", "bar");
 
 # Get current date
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
@@ -65,10 +64,14 @@ if ( $sec < 10 ) { $sec = "0$sec" }
 $year = $year + 1900;
 
 my @abbr = qw(January February March April May June July August September October November December);
+if ( $hour > 12 ) {
+  $hour = $hour - 12;
+}
 my $DATE = "$hour".':'."$min".":$sec"."_$abbr[$mon]"."_$mday"."_$year";
 
 # Set files
 my $status                   = 'status.html';
+my $remote_display           = 'remote_display.txt';
 my $fargo_storage_file       = 'fargo.txt';
 my $tournament_name          = 'tournament_name.txt';
 my $chip_rating_storage_file = 'chip_rating.txt';
@@ -107,6 +110,7 @@ if ( $^O =~ /MSWin32/ ) {
   if ( exists $ENV{'LOCALAPPDATA'} ) {
     my $local_app_data        = $ENV{'LOCALAPPDATA'};
     $status                   = "$local_app_data\\$status";
+    $remote_display           = "$local_app_data\\$remote_display";
     $fargo_storage_file       = "$local_app_data\\$fargo_storage_file";
     $chip_rating_storage_file = "$local_app_data\\$chip_rating_storage_file";
     $player_db                = "$local_app_data\\$player_db";
@@ -122,6 +126,7 @@ if ( $^O =~ /MSWin32/ ) {
     $tournament_name          = "$local_app_data\\$tournament_name";
   } else {
     $status                   = $profile . "\\desktop\\$status";
+    $remote_display           = $profile . "\\desktop\\$remote_display";
     $fargo_storage_file       = $profile . "\\desktop\\$fargo_storage_file";
     $chip_rating_storage_file = $profile . "\\desktop\\$chip_rating_storage_file";
     $player_db                = $profile . "\\desktop\\$player_db";
@@ -155,6 +160,10 @@ print OUTFILE "$abbr[$mon]".' '."$mday".' '."$year"."\n";
 print OUTFILE "Lightning Chip Tourney results:                      --by Martin Colello\n\n";
 
 # Setup some global hashes and variables
+my $remote_server_check = 1;     # Trigger whether or not to use sftp
+my $remote_user;                 # User id for remote display
+my $remote_pass;                 # Password for remote display
+my $remote_server;               # Remote server for display
 my $color  = 'bold white';       # Default text color to start with
 my $key;                         # Generic holder for hash keys
 my %players;                     # Hash which contains tourney players
@@ -228,6 +237,8 @@ my $chips_7 = 521;
 my $chips_6 = 581;
 my $chips_5 = 641;
 my $chips_4 = 1001;
+
+read_remote_display();
 
 print color($color) unless ( $Colors eq 'off');
 
@@ -361,11 +372,11 @@ while(1) {
       $done = 1 if $choice eq 'T';
       $done = 1 if $choice eq 'C';
       $done = 1 if $choice eq 'P';
+      $done = 1 if $choice eq 'S';
       if ( $tourney_running eq 1 ) {
         $done = 1 if $choice eq 'M';
         $done = 1 if $choice eq 'H';
         $done = 1 if $choice eq 'L';
-        $done = 1 if $choice eq 'S';
         $done = 1 if $choice eq 'U';
         $done = 1 if $choice eq 'E';
         $done = 1 if $choice eq 'Y';
@@ -388,7 +399,6 @@ while(1) {
   if ( $choice eq 'G'  ) { give_chip()          }
   if ( $choice eq 'T'  ) { take_chip()          }
   if ( $choice eq 'L'  ) { loser()              }
-  if ( $choice eq 'S'  ) { shuffle_stack()      }
   if ( $choice eq 'E'  ) { enter_shuffle_mode() }
   if ( $choice eq 'C'  ) { switch_colors()      }
   if ( $choice eq 'M'  ) { move_player()        }
@@ -398,8 +408,84 @@ while(1) {
   if ( $choice eq 'U'  ) { undo_last_loser()    }
   if ( $choice eq 'F'  ) { forfeit()            }
   if ( $choice eq 'Y'  ) { list_players()       }
-
+  if ( $choice eq 'S'  ) { 
+    if ( $tourney_running eq 0 ) { 
+      setup_remote_display();
+    } else {
+      shuffle_stack();
+    }
+  }
 }# End of MAIN LOOP
+
+sub read_remote_display {
+  print "Reading remote display info\n";
+  my @remote_server;
+  if ( -e $remote_display ) {
+    open REMOTE_DISPLAY, "<$remote_display" or die;
+    @remote_server = <REMOTE_DISPLAY>;
+    close REMOTE_DISPLAY;
+    $remote_user    = $remote_server[0];
+    $remote_pass    = $remote_server[1];
+    $remote_server  = $remote_server[2];
+    chomp($remote_user);
+    chomp($remote_pass);
+    chomp($remote_server);
+  }
+}
+
+sub setup_remote_display {
+  header();
+  if ( $remote_user =~ /\w/ ) {
+    print "\n\nCurrent Config:\n\n";
+    print "User:       $remote_user\n";
+    print "Password:   $remote_pass\n";
+    print "Server:     $remote_server\n\n\n";
+  }
+  print "\nSetup new remote server info:\n\n";
+  print "Are you sure? (y/n)\n\n";
+  print_footer();
+  my $yesorno = yesorno();
+  chomp($yesorno);
+  $yesorno=lc($yesorno);
+  if ( $yesorno ne 'y' ) { 
+    print "Action cancelled.\n";
+    sleep 2;
+    return;
+  }
+  header();
+  print "Enter new remote user id: ";
+  my $remote_user_temp = <STDIN>;
+  chomp($remote_user_temp);
+  print "\nEnter new remote password: ";
+  my $remote_pass_temp = <STDIN>;
+  chomp($remote_pass_temp);
+  print "\nEnter new server: ";
+  my $remote_server_temp = <STDIN>;
+  chomp($remote_server_temp);
+  print "\n";
+  header();
+  print "User id:    $remote_user_temp\n";
+  print "Password:   $remote_pass_temp\n";
+  print "Server:     $remote_server_temp\n\n";
+  print "Is this correct? (y/n)\n\n";
+  print_footer();
+  my $yesorno = yesorno();
+  chomp($yesorno);
+  $yesorno=lc($yesorno);
+  if ( $yesorno ne 'y' ) { 
+    print "Action cancelled.\n";
+    sleep 2;
+    return;
+  }
+  $remote_user    = $remote_user_temp;
+  $remote_pass    = $remote_pass_temp;
+  $remote_server  = $remote_server_temp;
+  open REMOTE_DISPLAY, ">$remote_display" or die;
+  print REMOTE_DISPLAY "$remote_user\n";
+  print REMOTE_DISPLAY "$remote_pass\n";
+  print REMOTE_DISPLAY "$remote_server";
+  close REMOTE_DISPLAY;
+}
 
 sub draw_screen {
 
@@ -415,10 +501,14 @@ sub draw_screen {
 <title>Lightning Tourney --by Martin Colello</title>
 </head>
 <body>
-<pre>
 END_HEADER
 
-  print STATUS "$html_header";
+  print STATUS "$html_header\n";
+  print STATUS "<h3>$event</h3>\n";
+  my $print_date = $DATE;
+  $print_date =~ s/_/ /g;
+  print STATUS "$print_date<br>\n";
+  print STATUS "<pre>\n";
 
   if ( $tourney_running eq 0 ) { 
     my @number_of_players = keys(%players);
@@ -429,6 +519,9 @@ END_HEADER
   if ( $min < 10 ) { $min = "0$min" }
   if ( $sec < 10 ) { $sec = "0$sec" }
   $year = $year + 1900;
+  if ( $hour > 12 ) {
+    $hour = $hour - 12;
+  }
 
   my @abbr = qw(January February March April May June July August September October November December);
   $DATE = "$hour".':'."$min".":$sec"."_$abbr[$mon]"."_$mday"."_$year";
@@ -442,6 +535,11 @@ END_HEADER
   header();
 
   print STATUS "\nLightning Chip Tourney - $event\n\n\n";
+
+  my $stack_num = @stack;
+  if ( $stack_num < 2 ) {
+    print STATUS "Tournament winner:  $stack[0]\n\n";
+  }
 
   # Print single column header if 15 players or less
   print color('bold yellow') unless ( $Colors eq 'off');;
@@ -760,7 +858,11 @@ END_HEADER
     print color('bold yellow') unless ( $Colors eq 'off');
     print "C";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")olors\n(";
+    print ")olors (";
+    print color('bold yellow') unless ( $Colors eq 'off');
+    print "S";
+    print color('bold white') unless ( $Colors eq 'off');
+    print ")etup Remote Display\n(";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "G";
     print color('bold white') unless ( $Colors eq 'off');
@@ -786,9 +888,7 @@ END_HEADER
     print color('bold white') unless ( $Colors eq 'off');
     print ")t player db\n";
   }
-    if ( ( $tourney_running eq 0 ) and ( $Colors eq 'on'  ) )  {
-      print colored("\n                                                                                                                         ", 'bright_yellow on_blue'), "\n";
-    }
+  print_footer() unless ( $tourney_running eq 1 );
   # Print menu
   if ( $tourney_running eq 1 ) {
     #print "(l)oser (n)ew player (d)elete player (r)emove table (a)dd table (g)ive chip (t)ake chip (q)uit program\n";
@@ -884,20 +984,32 @@ END_HEADER
     my @count_players = keys(%players);
     my $count_players = @count_players;
 
-    if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'on' ) )  {
-      print colored("\n       SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE       ", 'bright_yellow on_red'), "\n";
-    }
-    if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'off' ) )  {
-      print colored("\n                                                                                                                         ", 'bright_yellow on_blue'), "\n";
-    }
-    if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'on' ) )  {
-      print         "\n       SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE       \n";
-    }
+    print_footer();
+
   }
 
   print STATUS "</pre></body></html>\n";
   close STATUS;
+  if ( $tourney_running eq 1 ) {
+    send_status_to_server();
+  }
+}
 
+sub print_footer {
+
+  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'on' ) )  {
+    print colored("\n       SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE       ", 'bright_yellow on_red'), "\n";
+  }
+  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'off' ) )  {
+    #print colored("\n                                                                                                                         ", 'bright_yellow on_blue'), "\n";
+     print colored("\n    http://billiards.rementis.us:9000 for live updates!                                                                  ", 'bright_yellow on_blue'), "\n";
+  }
+  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'on' ) )  {
+    print         "\n       SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE       \n";
+  }
+  if ( ( $tourney_running eq 0 ) and ( $Colors eq 'on'  ) )  {
+    print colored("\n                                                                                                                         ", 'bright_yellow on_blue'), "\n";
+  }
 }
 
 sub list_players {
@@ -925,6 +1037,7 @@ sub list_players {
   my $color = 'bold cyan';
   print color($color) unless ( $Colors eq 'off');
   print "\n\nAny key to continue\n";
+  print_footer();
   yesorno('any');
 }
 
@@ -932,14 +1045,31 @@ sub list_players {
 
 sub send_status_to_server {
 
-  my $source;
-  my $destination;
-  my $host = '192.168.2.149';
-  my %args = ( user     => 'martin',
-               password => '',
+  my $host = $remote_server;
+  if ( $remote_server_check == 1 ) {
+    my $p = Net::Ping->new('tcp');
+    $p->port_number(9001);
+    if ( $p->ping($host,3) ) {
+      $remote_server_check = 2;
+    } else {
+      $remote_server_check = 3;
+    }
+    $p->close();
+  }
+
+  my $remote_filename = "$event".'.html';
+  $remote_filename =~ s/\s+/_/g;
+  #print "host is $host\n";
+  my %args = ( user     => $remote_user,
+               password => $remote_pass,
+               warn     => 'false',
+	       ssh_args => [ port => '9001', strict_host_key_checking => 'no',],
+	       #debug    => 1,
              );
-  my $sftp = Net::SFTP->new($host,%args);
-  $sftp->put("$source", "$destination");
+  if ( $remote_server_check == 2 ) {
+    my $sftp = Net::SFTP->new($host,%args);
+    $sftp->put("$status", "/var/www/html/$remote_filename");
+  }
 }
 
 sub loser {
@@ -1107,7 +1237,7 @@ sub undo_last_loser {
   # Undo last loser
   
   print "\nUndo Last Action\n\n";
-  print "Are you sure?\n";
+  print "Are you sure? (y/n)\n";
   my $yesorno = yesorno();
   chomp($yesorno);
   $yesorno=lc($yesorno);
@@ -1226,7 +1356,8 @@ sub start_tourney {
 
 
   print "\n\n\n\n$counttables tables have been configured.\n";
-  print "\n\n\n\n\n\nStart tourney now?\n";
+  print "\n\n\n\n\n\nStart tourney now? (y/n)\n";
+  print_footer();
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
@@ -1270,7 +1401,7 @@ sub new_table {
     return;
   }
 
-  print "Add Table Number $name, correct?\n";
+  print "Add Table Number $name, correct? (y/n)\n";
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
@@ -1422,12 +1553,12 @@ sub new_player {
     return;
   }
 
-  print "$name with $chips chips and Fargo ID $fargo_id, correct?\n";
+  print "$name with $chips chips and Fargo ID $fargo_id, correct? (y/n)\n";
 
   if ( ($name_lower =~ /colello/) && ($name_lower =~ /mart/) ) {
     $name = "Vince Colello ($fargo)";
   }
-
+  print_footer();
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
@@ -1584,7 +1715,7 @@ sub delete_player {
   }  
 
   print "THIS WILL REMOVE PLAYER FROM TOURNEY\n";
-  print "Delete $player, correct?\n";
+  print "Delete $player, correct? (y/n)\n";
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
@@ -1630,7 +1761,7 @@ sub give_chip {
   my $player = $players[$numselection];
   chomp($player);
 
-  print "Grant chip to $player, correct?\n";
+  print "Grant chip to $player, correct? (y/n)\n";
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
@@ -1667,7 +1798,7 @@ sub take_chip {
     return;
   }
 
-  print "Take chip from $player, correct?\n";
+  print "Take chip from $player, correct? (y/n)\n";
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
@@ -1729,7 +1860,7 @@ sub delete_table {
   my $table = $tables[$numselection];
   chomp($table);
 
-  print "Delete table $table, correct?\n";
+  print "Delete table $table, correct? (y/n)\n";
   my $yesorno = yesorno();
   chomp($yesorno);
 
@@ -1786,7 +1917,7 @@ sub quit_program {
 
 sub yesorno {
   my $any = shift;
-  if ( $any ne 'any' ) {print "(y/n)\n"}
+  #if ( $any ne 'any' ) {print "(y/n)\n"}
   my $done = 0;
   my $choice;
   ReadMode 4;
@@ -1818,7 +1949,7 @@ sub shuffle_stack {
   my $yesorno;
   if (( $check_if_auto !~ /AUTO/ ) && ( $skip_yes ne 'yes' )) {
     print "\n\n\n\n\nThis will reshuffle ALL players including at current tables!!!\n";
-    print "Are you sure?\n";
+    print "Are you sure? (y/n)\n";
     $yesorno = yesorno();
     chomp($yesorno);
   } else {
@@ -1933,15 +2064,15 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.61           Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.70           Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print         "\nLIGHTNING CHIP TOURNEY v9.61           Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY v9.70           Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.61  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.70  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print         "\nLIGHTNING CHIP TOURNEY v9.61  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY v9.70  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
     }
   }
 
@@ -2194,7 +2325,7 @@ sub enter_shuffle_mode {
   } else {
     print "\n\n\n\n\nThis will EXIT shuffle mode.\n\n";
   }
-  print "Are you sure?\n";
+  print "Are you sure? (y/n)\n";
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
@@ -2208,7 +2339,7 @@ sub enter_shuffle_mode {
 }
 
 sub history {
-  header();
+  #header();
   print "Opening history file...\n";
   open (OUTCSV, '>',$outfile_csv);
   print OUTCSV "Player #1,,,Player #2,\n";
@@ -2303,7 +2434,7 @@ sub forfeit {
   my $player = $players[$numselection];
   chomp($player);
 
-  print "Player $player will FORFEIT, correct?\n";
+  print "Player $player will FORFEIT, correct? (y/n)\n";
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
@@ -2379,7 +2510,7 @@ sub restart {
   # Restart entire tourney
   
   print "\nRestart ENTIRE tourney!\n\n";
-  print "Are you sure?\n";
+  print "Are you sure? (y/n)\n";
   my $yesorno = yesorno();
   chomp($yesorno);
   $yesorno=lc($yesorno);
