@@ -2,7 +2,9 @@ Lightning Chip Tourney           --by Martin Colello
 
 [Video Demo](https://youtu.be/cDDldyLX9ng)
 
-Now version 8.70 with Undo option, flip for break, and a match timer!
+Now version 9.70 with remote display!  Anyone can follow your tournament results live!
+
+Contact me to enable an account for this feature, it's free!
 
 You can hit the 'C' key to turn colors off if you prefer.
 
