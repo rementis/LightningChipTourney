@@ -1002,7 +1002,7 @@ sub print_footer {
   }
   if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'off' ) )  {
     #print colored("\n                                                                                                                         ", 'bright_yellow on_blue'), "\n";
-     print colored("\n    http://billiards.rementis.us:9000 for live updates!                                                                  ", 'bright_yellow on_blue'), "\n";
+     print colored("\n    http://billiards.rementis.us for live updates!                                                                       ", 'bright_yellow on_blue'), "\n";
   }
   if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'on' ) )  {
     print         "\n       SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE       \n";
@@ -1048,7 +1048,7 @@ sub send_status_to_server {
   my $host = $remote_server;
   if ( $remote_server_check == 1 ) {
     my $p = Net::Ping->new('tcp');
-    $p->port_number(9001);
+    $p->port_number(22);
     if ( $p->ping($host,3) ) {
       $remote_server_check = 2;
     } else {
@@ -1063,7 +1063,7 @@ sub send_status_to_server {
   my %args = ( user     => $remote_user,
                password => $remote_pass,
                warn     => 'false',
-	       ssh_args => [ port => '9001', strict_host_key_checking => 'no',],
+	       ssh_args => [ port => '22', strict_host_key_checking => 'no',],
 	       #debug    => 1,
              );
   if ( $remote_server_check == 2 ) {
@@ -2064,15 +2064,15 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.70           Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.71           Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print         "\nLIGHTNING CHIP TOURNEY v9.70           Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY v9.71           Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.70  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.71  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print         "\nLIGHTNING CHIP TOURNEY v9.70  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY v9.71  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
     }
   }
 
