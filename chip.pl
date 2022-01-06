@@ -1002,7 +1002,7 @@ sub print_footer {
   }
   if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'off' ) )  {
     #print colored("\n                                                                                                                         ", 'bright_yellow on_blue'), "\n";
-     print colored("\n    http://billiards.rementis.us for live updates!                                                                       ", 'bright_yellow on_blue'), "\n";
+     print colored("\n    http://lightningchip.xyz for live updates!                                                                           ", 'bright_yellow on_blue'), "\n";
   }
   if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'on' ) )  {
     print         "\n       SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE       \n";
@@ -2064,15 +2064,15 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.71           Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.72           Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print         "\nLIGHTNING CHIP TOURNEY v9.71           Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY v9.72           Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.71  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.72  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print         "\nLIGHTNING CHIP TOURNEY v9.71  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY v9.72  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
     }
   }
 
