@@ -1,5 +1,7 @@
 Lightning Chip Tourney           --by Martin Colello
 
+See "Releases" for Windows installer.
+
 [Video Demo](https://youtu.be/cDDldyLX9ng)
 
 Now version 9.70 with remote display!  Anyone can follow your tournament results live!
