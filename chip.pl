@@ -67,10 +67,10 @@ my @abbr = qw(January February March April May June July August September Octobe
 if ( $hour > 12 ) {
   $hour = $hour - 12;
 }
-my $DATE = "$hour".':'."$min".":$sec"."_$abbr[$mon]"."_$mday"."_$year";
+my $DATE = "$hour".'_'."$min"."_$sec"."_$abbr[$mon]"."_$mday"."_$year";
 
 # Set files
-my $status                   = 'status.html';
+my $status                   = "$DATE".'status.html';
 my $remote_display           = 'remote_display.txt';
 my $fargo_storage_file       = 'fargo.txt';
 my $tournament_name          = 'tournament_name.txt';
@@ -85,15 +85,18 @@ my $storable_whobeat         = 'storable_whobeat.txt';
 my $storable_whobeat_csv     = 'storable_whobeat_csv.txt';
 my $storable_tourney_running = 'storable_tourney_running.txt';
 my $namestxt                 = 'names.txt';
-my $desktop                  = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
-my $desktop_csv              = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
-my $outfile_xlsx             = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.xlsx';
+#my $desktop                 = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
+my $desktop                  = 'chip_results_'."$DATE".'.txt';
+#my $desktop_csv             = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
+my $desktop_csv              = 'chip_results_'."$DATE".'.csv';
+#my $outfile_xlsx            = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.xlsx';
+my $outfile_xlsx             = 'chip_results_'."$DATE".'.xlsx';
 
 if ( $^O =~ /MSWin32/ ) {
   system("title Lightning Tournament");
   chomp(my $profile = `set userprofile`);
   $profile          =~ s/userprofile=//i;
-  my $homedir       = $profile . "\\desktop";
+  my $homedir       = $profile . "\\desktop\\Chip_Results";
 
   # If desktop folder exists do nothing, if not then create it
   if ( -d $homedir ) {
@@ -102,9 +105,9 @@ if ( $^O =~ /MSWin32/ ) {
     make_path($homedir);
   }
 
-  $desktop      = $profile . "\\desktop\\$desktop";
-  $desktop_csv  = $profile . "\\desktop\\$desktop_csv";
-  $outfile_xlsx = $profile . "\\desktop\\$outfile_xlsx";
+  $desktop      = $profile . "\\desktop\\Chip_Results\\$desktop";
+  $desktop_csv  = $profile . "\\desktop\\Chip_Results\\$desktop_csv";
+  $outfile_xlsx = $profile . "\\desktop\\Chip_Results\\$outfile_xlsx";
 
 
   if ( exists $ENV{'LOCALAPPDATA'} ) {
@@ -155,6 +158,7 @@ my $outfile     = "$desktop";
 my $outfile_csv = "$desktop_csv";
 
 # Open log file
+#print "outfile is $outfile\n";
 open (OUTFILE,'>',$outfile) or die "Cannot open results file: $!";
 print OUTFILE "$abbr[$mon]".' '."$mday".' '."$year"."\n";
 print OUTFILE "Lightning Chip Tourney results:                      --by Martin Colello\n\n";
@@ -268,7 +272,6 @@ if ( -e $namestxt ) {
     $players{$player_name}{'fargo_id'} = $split[3];
     $players{$player_name}{'won'} = 0;
   }
-  $tables{'6'}=1;
   $tables{'5'}=1;
 }
 if ( -e $tournament_name ) {
@@ -1046,6 +1049,10 @@ sub list_players {
 sub send_status_to_server {
 
   my $host = $remote_server;
+  if ( $host !~ /\w/ )        { return }
+  if ( $remote_user !~ /\w/ ) { return }
+  if ( $remote_pass !~ /\w/ ) { return }
+
   if ( $remote_server_check == 1 ) {
     my $p = Net::Ping->new('tcp');
     $p->port_number(22);
@@ -1928,6 +1935,7 @@ sub yesorno {
       $done = 1 if $choice eq 'Y';
       $done = 1 if $choice eq 'N';
       $done = 1 if $choice eq 'R';
+      $done = 1 if $choice eq 'S';
       $done = 1 if $any eq 'any';
     }
   }
@@ -1935,6 +1943,7 @@ sub yesorno {
   if ( $choice eq 'Y' ) { return 'y' }
   if ( $choice eq 'N' ) { return 'n' }
   if ( $choice eq 'R' ) { return 'r' }
+  if ( $choice eq 'S' ) { return 's' }
 }
 
 sub clear_screen {
@@ -2064,15 +2073,15 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.72           Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.73           Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print         "\nLIGHTNING CHIP TOURNEY v9.72           Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY v9.73           Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.72  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.73  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print         "\nLIGHTNING CHIP TOURNEY v9.72  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY v9.73  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
     }
   }
 
@@ -2205,18 +2214,23 @@ sub switch_colors {
 
 sub game_and_event {
  
+  header();
   if ( -f $storable_send ) { 
-    print "Restoring previous tournament...\n";
-    sleep 2;
-    $send            = ${retrieve("$storable_send")};
-    %players         = %{retrieve("$storable_players")};
-    %tables          = %{retrieve("$storable_tables")};
-    @dead            = @{retrieve("$storable_dead")};
-    @stack           = @{retrieve("$storable_stack")};
-    @whobeat         = @{retrieve("$storable_whobeat")};
-    @whobeat_csv     = @{retrieve("$storable_whobeat_csv")};
-    $tourney_running = ${retrieve("$storable_tourney_running")};
-    return;
+    print "(R)estore previous tournament or (S)tart new tournament? (R/S)\n";
+    my $yesorno = yesorno();
+    if ( $yesorno =~ /r/ ) {
+      print "Restoring previous tournament.\n";
+      sleep 2;
+      $send            = ${retrieve("$storable_send")};
+      %players         = %{retrieve("$storable_players")};
+      %tables          = %{retrieve("$storable_tables")};
+      @dead            = @{retrieve("$storable_dead")};
+      @stack           = @{retrieve("$storable_stack")};
+      @whobeat         = @{retrieve("$storable_whobeat")};
+      @whobeat_csv     = @{retrieve("$storable_whobeat_csv")};
+      $tourney_running = ${retrieve("$storable_tourney_running")};
+      return;
+    }
   }
 
   my $example_name;
@@ -2549,6 +2563,7 @@ sub delete_storable {
   unlink("$storable_whobeat");
   unlink("$storable_whobeat_csv");
   unlink("$storable_tourney_running");
+  unlink("$status");
 }
 
 
