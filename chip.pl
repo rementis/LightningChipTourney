@@ -67,7 +67,8 @@ my @abbr = qw(January February March April May June July August September Octobe
 if ( $hour > 12 ) {
   $hour = $hour - 12;
 }
-my $DATE = "$hour".'_'."$min"."_$sec"."_$abbr[$mon]"."_$mday"."_$year";
+my $DATE  = "$hour".'_'."$min"."_$sec"."_$abbr[$mon]"."_$mday"."_$year";
+my $DATE2 = "$abbr[$mon]"."_$mday"."_$year";
 
 # Set files
 my $status                   = "$DATE".'status.html';
@@ -507,8 +508,11 @@ sub draw_screen {
 END_HEADER
 
   print STATUS "$html_header\n";
+  print STATUS "<style>\n";
+  print STATUS "h3 { color: blue; }\n";
+  print STATUS "</style>\n";
   print STATUS "<h3>$event</h3>\n";
-  my $print_date = $DATE;
+  my $print_date = $DATE2;
   $print_date =~ s/_/ /g;
   print STATUS "$print_date<br>\n";
   print STATUS "<pre>\n";
@@ -537,11 +541,11 @@ END_HEADER
 
   header();
 
-  print STATUS "\nLightning Chip Tourney - $event\n\n\n";
+  print STATUS "\nLightning Chip Tourney             --by Martin Colello\n\n\n";
 
   my $stack_num = @stack;
   if ( $stack_num < 2 ) {
-    print STATUS "Tournament winner:  $stack[0]\n\n";
+    print STATUS "<h3>Tournament winner:  $stack[0]</h3>\n\n";
   }
 
   # Print single column header if 15 players or less
@@ -749,7 +753,8 @@ END_HEADER
    
   my @dead_display;
 
-  print STATUS "KNOCKED OUT:\n\n";
+  #print STATUS "KNOCKED OUT:\n\n";
+  print STATUS "<p style=\"color:red\">\n";
 
   if ( $master_number_of_players < 16 ) {
     # Print to screen the list of dead players in RED font
@@ -810,6 +815,7 @@ END_HEADER
           print STATUS columnize(\@dead_display,{displaywidth=>140,colsep=>'     '});
         }
       }
+    print STATUS "</p>\n";
     my $color  = 'bold white';
     print color($color) unless ( $Colors eq 'off');;
 
@@ -1066,7 +1072,6 @@ sub send_status_to_server {
 
   my $remote_filename = "$event".'.html';
   $remote_filename =~ s/\s+/_/g;
-  #print "host is $host\n";
   my %args = ( user     => $remote_user,
                password => $remote_pass,
                warn     => 'false',
@@ -1074,8 +1079,10 @@ sub send_status_to_server {
 	       #debug    => 1,
              );
   if ( $remote_server_check == 2 ) {
-    my $sftp = Net::SFTP->new($host,%args);
-    $sftp->put("$status", "/var/www/html/$remote_filename");
+    eval { 
+      my $sftp = Net::SFTP->new($host,%args);
+      $sftp->put("$status", "/var/www/html/results/$remote_filename");
+    }
   }
 }
 
@@ -2073,15 +2080,15 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.73           Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.74           Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print         "\nLIGHTNING CHIP TOURNEY v9.73           Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY v9.74           Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.73  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY v9.74  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print         "\nLIGHTNING CHIP TOURNEY v9.73  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY v9.74  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
     }
   }
 
@@ -2254,6 +2261,9 @@ sub game_and_event {
   }
 
   chomp($event);
+  $event =~ s/\'//g;
+  $event =~ s/\://g;
+
   open (TOURNEYNAME, '>',$tournament_name);
   print TOURNEYNAME "$event";
   close TOURNEYNAME;
