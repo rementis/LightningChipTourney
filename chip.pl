@@ -39,9 +39,16 @@
 # Capitalize first letter of each word in player name  #
 # Dec 2021                                             #
 #                                                      #
+# Create remote display                                #
+# Jan 2021                                             #
+#                                                      #
+# Automated version check                              #
+# Jan 2021                                             #
+#                                                      #
 ########################################################
 
 use strict;
+use HTTP::Tiny;
 use Term::ReadKey;
 use List::Util 'shuffle';
 use Term::ANSIColor;
@@ -55,7 +62,6 @@ use Net::Ping;
 use File::Path qw( make_path );
 use if $^O eq "MSWin32", "Win32::Sound";
 $SIG{INT} = 'IGNORE';
-
 
 # Get current date
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
@@ -165,6 +171,7 @@ print OUTFILE "$abbr[$mon]".' '."$mday".' '."$year"."\n";
 print OUTFILE "Lightning Chip Tourney results:                      --by Martin Colello\n\n";
 
 # Setup some global hashes and variables
+my $version = 'v9.75';           # Installed version of software
 my $remote_server_check = 1;     # Trigger whether or not to use sftp
 my $remote_user;                 # User id for remote display
 my $remote_pass;                 # Password for remote display
@@ -242,6 +249,7 @@ my $chips_7 = 521;
 my $chips_6 = 581;
 my $chips_5 = 641;
 my $chips_4 = 1001;
+my $check_version = version();
 
 read_remote_display();
 
@@ -1009,9 +1017,11 @@ sub print_footer {
   if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'on' ) )  {
     print colored("\n       SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE       ", 'bright_yellow on_red'), "\n";
   }
-  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'off' ) )  {
-    #print colored("\n                                                                                                                         ", 'bright_yellow on_blue'), "\n";
+  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'off' ) and ( $version eq $check_version ) )  {
      print colored("\n    http://lightningchip.xyz for live updates!                                                                           ", 'bright_yellow on_blue'), "\n";
+  }
+  if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'off' ) and ( $version ne $check_version ) )  {
+     print colored("\n    http://lightningchip.xyz for live updates!               New software version available!                             ", 'bright_yellow on_blue'), "\n";
   }
   if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'on' ) )  {
     print         "\n       SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE       \n";
@@ -2080,15 +2090,15 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.74           Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY $version           Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print         "\nLIGHTNING CHIP TOURNEY v9.74           Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY $version           Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY v9.74  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY $version  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print         "\nLIGHTNING CHIP TOURNEY v9.74  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY $version  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
     }
   }
 
@@ -2520,6 +2530,7 @@ sub backup {
 }
 
 sub restart_backup {
+  # Backup variables in case you want to restart tourney
   $shuffle_mode_restart      = $shuffle_mode;
   $send_restart              = $send;
   %backup_players_restart    = %{ dclone \%players };
@@ -2565,6 +2576,7 @@ sub parse_duration {
 
 sub delete_storable {
 
+  # Delete recovery files
   unlink("$storable_send");
   unlink("$storable_players");
   unlink("$storable_tables");
@@ -2576,4 +2588,20 @@ sub delete_storable {
   unlink("$status");
 }
 
-
+sub version {
+  # Get current version from web page 
+  my $url = 'https://lightningchip.xyz/version.html';
+ 
+  my $response = HTTP::Tiny->new->get($url);
+  if ($response->{success}) {
+    if (length $response->{content}) {
+	my $send_back = $response->{content};
+	chomp($send_back);
+	return $send_back;
+    }
+    print "\n";
+  } else {
+    print "Failed: $response->{status} $response->{reasons}";
+    return $version;
+  }
+}
