@@ -45,6 +45,10 @@
 # Automated version check                              #
 # Jan 2021                                             #
 #                                                      #
+# Remove question for fargo ID as it's rarely used     #
+# Jan 2021                                             #
+#                                                      #
+#                                                      #
 ########################################################
 
 use strict;
@@ -61,6 +65,7 @@ use Net::SFTP;
 use Net::Ping;
 use File::Path qw( make_path );
 use if $^O eq "MSWin32", "Win32::Sound";
+
 $SIG{INT} = 'IGNORE';
 
 # Get current date
@@ -171,7 +176,7 @@ print OUTFILE "$abbr[$mon]".' '."$mday".' '."$year"."\n";
 print OUTFILE "Lightning Chip Tourney results:                      --by Martin Colello\n\n";
 
 # Setup some global hashes and variables
-my $version = 'v9.75';           # Installed version of software
+my $version = 'v9.76';           # Installed version of software
 my $remote_server_check = 1;     # Trigger whether or not to use sftp
 my $remote_user;                 # User id for remote display
 my $remote_pass;                 # Password for remote display
@@ -1529,16 +1534,18 @@ sub new_player {
     $potential_fargo_id = $fargo_id{$name_lower};
   }
 
-  if ( $potential_fargo_id == 0 ) {
-    print "Fargo ID Number: (or just just hit Enter for blank)\n";
-  } else {
-    print "Fargo ID Number [$potential_fargo_id]:\n";
-  }
-  print color('bold cyan') unless ( $Colors eq 'off');
-  chomp(my $fargo_id = <STDIN>);
-  if (( $potential_fargo_id > 1 ) and ( $fargo_id eq "" )) {
-    $fargo_id = $potential_fargo_id;
-  }
+  #  if ( $potential_fargo_id == 0 ) {
+  #  print "Fargo ID Number: (or just just hit Enter for blank)\n";
+  #} else {
+  #  print "Fargo ID Number [$potential_fargo_id]:\n";
+  #}
+  #print color('bold cyan') unless ( $Colors eq 'off');
+  #chomp(my $fargo_id = <STDIN>);
+  #if (( $potential_fargo_id > 1 ) and ( $fargo_id eq "" )) {
+  #  $fargo_id = $potential_fargo_id;
+  #}
+
+  my $fargo_id;
 
   print color('bold white') unless ( $Colors eq 'off');
   if ( $fargo_id !~ /^\d+\z/ ) {
@@ -1577,7 +1584,7 @@ sub new_player {
     return;
   }
 
-  print "$name with $chips chips and Fargo ID $fargo_id, correct? (y/n)\n";
+  print "$name with $chips chips, correct? (y/n)\n";
 
   if ( ($name_lower =~ /colello/) && ($name_lower =~ /mart/) ) {
     $name = "Vince Colello ($fargo)";
