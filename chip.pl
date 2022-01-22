@@ -176,7 +176,7 @@ print OUTFILE "$abbr[$mon]".' '."$mday".' '."$year"."\n";
 print OUTFILE "Lightning Chip Tourney results:                      --by Martin Colello\n\n";
 
 # Setup some global hashes and variables
-my $version = 'v9.76';           # Installed version of software
+my $version = 'v9.77';           # Installed version of software
 my $remote_server_check = 1;     # Trigger whether or not to use sftp
 my $remote_user;                 # User id for remote display
 my $remote_pass;                 # Password for remote display
@@ -554,7 +554,7 @@ END_HEADER
 
   header();
 
-  print STATUS "\nLightning Chip Tourney             --by Martin Colello\n\n\n";
+  print STATUS "\nLightning Chip Tourney          Players: $number_of_players              --by Martin Colello\n\n\n";
 
   my $stack_num = @stack;
   if ( $stack_num < 2 ) {
@@ -1534,17 +1534,6 @@ sub new_player {
     $potential_fargo_id = $fargo_id{$name_lower};
   }
 
-  #  if ( $potential_fargo_id == 0 ) {
-  #  print "Fargo ID Number: (or just just hit Enter for blank)\n";
-  #} else {
-  #  print "Fargo ID Number [$potential_fargo_id]:\n";
-  #}
-  #print color('bold cyan') unless ( $Colors eq 'off');
-  #chomp(my $fargo_id = <STDIN>);
-  #if (( $potential_fargo_id > 1 ) and ( $fargo_id eq "" )) {
-  #  $fargo_id = $potential_fargo_id;
-  #}
-
   my $fargo_id;
 
   print color('bold white') unless ( $Colors eq 'off');
@@ -1589,7 +1578,6 @@ sub new_player {
   if ( ($name_lower =~ /colello/) && ($name_lower =~ /mart/) ) {
     $name = "Vince Colello ($fargo)";
   }
-  print_footer();
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
@@ -1599,7 +1587,13 @@ sub new_player {
     $players{$name}{'fargo_id'} = $fargo_id;
     $players{$name}{'won'}      = 0;
     my $player_db_line = "$name_db:$fargo_id";
-    push @player_db, $player_db_line;
+    print "\nAdd $name to database? (y/n)\n";
+    print_footer();
+    my $yesorno = yesorno();
+    chomp($yesorno);
+    if ( $yesorno eq 'y' ) {
+      push @player_db, $player_db_line;
+    }
 
     # If tourney is already started, put new player at the top of the stack
     if ( $tourney_running eq 1 ) {
