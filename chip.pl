@@ -46,8 +46,10 @@
 # Jan 2021                                             #
 #                                                      #
 # Remove question for fargo ID as it's rarely used     #
-# Jan 2021                                             #
+# Jan 2022                                             #
 #                                                      #
+# Delete player using multi column if over 20 players  #
+# Jan 2022                                             #
 #                                                      #
 ########################################################
 
@@ -176,7 +178,7 @@ print OUTFILE "$abbr[$mon]".' '."$mday".' '."$year"."\n";
 print OUTFILE "Lightning Chip Tourney results:                      --by Martin Colello\n\n";
 
 # Setup some global hashes and variables
-my $version = 'v9.77';           # Installed version of software
+my $version = 'v9.78';           # Installed version of software
 my $remote_server_check = 1;     # Trigger whether or not to use sftp
 my $remote_user;                 # User id for remote display
 my $remote_pass;                 # Password for remote display
@@ -1675,6 +1677,10 @@ sub new_player_from_db {
     sleep 3;
     return;
   }
+  
+  if ( ($name =~ /Colello/) && ($name =~ /Mart/) ) {
+    $name = "Vince Colello ($fargo)";
+  }
 
   my $potential_chips = get_start_chips($fargo);
 
@@ -1721,11 +1727,17 @@ sub delete_player {
 
   my @players = keys(%players);
   @players = sort(@players);
+  my $number_of_menu_items = @players;
 
   $color = 'bold white';
   print color($color) unless ( $Colors eq 'off');
   print "\nPlease choose number of player to delete:\n\n";
-  my $numselection = print_menu_array(@players);
+  my $numselection;
+  if ( $number_of_menu_items < 21 ) {
+    $numselection = print_menu_array(@players);
+  } else {
+    $numselection = print_menu_array_columns(@players);
+  }
   if ( $numselection == 1000 ) {
     return;
   }
@@ -2443,7 +2455,7 @@ sub edit_player_db {
   print color('bold green') unless ( $Colors eq 'off');
   print "\n\nOpening player database...\n";
   print color('bold white') unless ( $Colors eq 'off');
-  sleep 3;
+  sleep 1;
   if ( $^O =~ /MSWin32/     ) { system("start notepad.exe \"$player_db\"") }
   if ( $^O =~ /next|darwin/ ) { system("open $player_db") }
 }
