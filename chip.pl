@@ -178,7 +178,7 @@ print OUTFILE "$abbr[$mon]".' '."$mday".' '."$year"."\n";
 print OUTFILE "Lightning Chip Tourney results:                      --by Martin Colello\n\n";
 
 # Setup some global hashes and variables
-my $version = 'v9.78';           # Installed version of software
+my $version = 'v9.79';           # Installed version of software
 my $remote_server_check = 1;     # Trigger whether or not to use sftp
 my $remote_user;                 # User id for remote display
 my $remote_pass;                 # Password for remote display
@@ -391,7 +391,8 @@ while(1) {
       $done = 1 if $choice eq 'T';
       $done = 1 if $choice eq 'C';
       $done = 1 if $choice eq 'P';
-      $done = 1 if $choice eq 'S';
+      $done = 1 if $choice eq 'E';
+      $done = 1 if $choice eq 'O';
       if ( $tourney_running eq 1 ) {
         $done = 1 if $choice eq 'M';
         $done = 1 if $choice eq 'H';
@@ -400,6 +401,7 @@ while(1) {
         $done = 1 if $choice eq 'E';
         $done = 1 if $choice eq 'Y';
         $done = 1 if $choice eq 'F';
+        $done = 1 if $choice eq 'S';
       }
       if ( $tourney_running eq 0 ) {
         $done = 1 if $choice eq 'B';
@@ -409,31 +411,26 @@ while(1) {
   ReadMode 0;
 
   # Call subroutines based on menu selection
-  if ( $choice eq 'Q'  ) { quit_program()       }
-  if ( $choice eq 'N'  ) { new_player()         }
-  if ( $choice eq 'D'  ) { delete_player()      }
-  if ( $choice eq 'A'  ) { new_table()          }
-  if ( $choice eq 'R'  ) { delete_table()       }
-  if ( $choice eq 'B'  ) { start_tourney()      }
-  if ( $choice eq 'G'  ) { give_chip()          }
-  if ( $choice eq 'T'  ) { take_chip()          }
-  if ( $choice eq 'L'  ) { loser()              }
-  if ( $choice eq 'E'  ) { enter_shuffle_mode() }
-  if ( $choice eq 'C'  ) { switch_colors()      }
-  if ( $choice eq 'M'  ) { move_player()        }
-  if ( $choice eq 'H'  ) { history()            }
-  if ( $choice eq 'P'  ) { new_player_from_db() }
-  if ( $choice eq 'I'  ) { edit_player_db()     }
-  if ( $choice eq 'U'  ) { undo_last_loser()    }
-  if ( $choice eq 'F'  ) { forfeit()            }
-  if ( $choice eq 'Y'  ) { list_players()       }
-  if ( $choice eq 'S'  ) { 
-    if ( $tourney_running eq 0 ) { 
-      setup_remote_display();
-    } else {
-      shuffle_stack();
-    }
-  }
+  if ( $choice eq 'Q'  ) { quit_program()         }
+  if ( $choice eq 'N'  ) { new_player()           }
+  if ( $choice eq 'D'  ) { delete_player()        }
+  if ( $choice eq 'A'  ) { new_table()            }
+  if ( $choice eq 'R'  ) { delete_table()         }
+  if ( $choice eq 'B'  ) { start_tourney()        }
+  if ( $choice eq 'G'  ) { give_chip()            }
+  if ( $choice eq 'T'  ) { take_chip()            }
+  if ( $choice eq 'L'  ) { loser()                }
+  if ( $choice eq 'E'  ) { enter_shuffle_mode()   }
+  if ( $choice eq 'C'  ) { switch_colors()        }
+  if ( $choice eq 'M'  ) { move_player()          }
+  if ( $choice eq 'H'  ) { history()              }
+  if ( $choice eq 'P'  ) { new_player_from_db()   }
+  if ( $choice eq 'I'  ) { edit_player_db()       }
+  if ( $choice eq 'U'  ) { undo_last_loser()      }
+  if ( $choice eq 'F'  ) { forfeit()              }
+  if ( $choice eq 'Y'  ) { list_players()         }
+  if ( $choice eq 'O'  ) { setup_remote_display() }
+  if ( $choice eq 'S'  ) { shuffle_stack()        }
 }# End of MAIN LOOP
 
 sub read_remote_display {
@@ -882,11 +879,11 @@ END_HEADER
     print color('bold yellow') unless ( $Colors eq 'off');
     print "C";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")olors (";
+    print ")olors Rem(";
     print color('bold yellow') unless ( $Colors eq 'off');
-    print "S";
+    print "O";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")etup Remote Display\n(";
+    print ")te Display\n(";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "G";
     print color('bold white') unless ( $Colors eq 'off');
@@ -1789,7 +1786,7 @@ sub give_chip {
   print color($color) unless ( $Colors eq 'off');
   header();
   print "\nPlease choose number of player to give chip:\n\n";
-  my $numselection = print_menu_array(@players);
+  my $numselection = print_menu_array_columns(@players);
 
   if ( $numselection == 1000 ) {
     return;
@@ -1821,7 +1818,7 @@ sub take_chip {
   $color = 'bold white';
   print color($color) unless ( $Colors eq 'off');
   print "\nPlease choose number of player to take chip:\n\n";
-  my $numselection = print_menu_array(@players);
+  my $numselection = print_menu_array_columns(@players);
 
   if ( $numselection == 1000 ) {
     return;
@@ -1856,7 +1853,11 @@ sub move_player {
   $color = 'bold white';
   print color($color) unless ( $Colors eq 'off');
   print "\nPlease choose number of player to move:\n\n";
-  my $numselection = print_menu_array(@players);
+  my $numselection = print_menu_array_columns(@players);
+
+  if ( $numselection == 1000 ) {
+    return;
+  }
 
   my $player = $players[$numselection];
   chomp($player);
@@ -1868,6 +1869,10 @@ sub move_player {
   header();
   print "\nMove $player to which table?:\n\n";
   my $numselection = print_menu_array(@tables);
+
+  if ( $numselection == 1000 ) {
+    return;
+  }
 
   my $table = $tables[$numselection];
   chomp($table);
@@ -1925,7 +1930,8 @@ sub delete_table {
 sub quit_program {
   header();
   print "\nQuitting will NOT save tourney data!!!\n";
-  print "Hit Y to quit, hit R to restart entire tourney.\n";
+  print "Hit Y to quit, hit R to restart entire tourney.\n\n\n";
+  print_footer();
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
@@ -1988,7 +1994,8 @@ sub shuffle_stack {
   my $yesorno;
   if (( $check_if_auto !~ /AUTO/ ) && ( $skip_yes ne 'yes' )) {
     print "\n\n\n\n\nThis will reshuffle ALL players including at current tables!!!\n";
-    print "Are you sure? (y/n)\n";
+    print "Are you sure? (y/n)\n\n\n";
+    print_footer();
     $yesorno = yesorno();
     chomp($yesorno);
   } else {
@@ -2373,6 +2380,8 @@ sub enter_shuffle_mode {
     print "\n\n\n\n\nThis will EXIT shuffle mode.\n\n";
   }
   print "Are you sure? (y/n)\n";
+  print "\n\n";
+  print_footer();
   my $yesorno = yesorno();
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
@@ -2472,7 +2481,7 @@ sub forfeit {
   $color = 'bold white';
   print color($color) unless ( $Colors eq 'off');
   print "\nPlease choose number of player who wishes to forfeit:\n\n";
-  my $numselection = print_menu_array(@players);
+  my $numselection = print_menu_array_columns(@players);
 
   if ( $numselection == 1000 ) {
     return;
