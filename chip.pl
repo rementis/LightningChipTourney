@@ -66,6 +66,8 @@ use Excel::Writer::XLSX;
 use Net::SFTP;
 use Net::Ping;
 use File::Path qw( make_path );
+use Win32::GUI();
+use Spreadsheet::BasicRead;
 use if $^O eq "MSWin32", "Win32::Sound";
 
 $SIG{INT} = 'IGNORE';
@@ -178,7 +180,7 @@ print OUTFILE "$abbr[$mon]".' '."$mday".' '."$year"."\n";
 print OUTFILE "Lightning Chip Tourney results:                      --by Martin Colello\n\n";
 
 # Setup some global hashes and variables
-my $version = 'v9.79';           # Installed version of software
+my $version = 'v9.80';           # Installed version of software
 my $remote_server_check = 1;     # Trigger whether or not to use sftp
 my $remote_user;                 # User id for remote display
 my $remote_pass;                 # Password for remote display
@@ -405,6 +407,7 @@ while(1) {
       }
       if ( $tourney_running eq 0 ) {
         $done = 1 if $choice eq 'B';
+        $done = 1 if $choice eq 'X';
       }
     }
   }
@@ -431,6 +434,7 @@ while(1) {
   if ( $choice eq 'Y'  ) { list_players()         }
   if ( $choice eq 'O'  ) { setup_remote_display() }
   if ( $choice eq 'S'  ) { shuffle_stack()        }
+  if ( $choice eq 'X'  ) { select_file()          }
 }# End of MAIN LOOP
 
 sub read_remote_display {
@@ -883,7 +887,11 @@ END_HEADER
     print color('bold yellow') unless ( $Colors eq 'off');
     print "O";
     print color('bold white') unless ( $Colors eq 'off');
-    print ")te Display\n(";
+    print ")te Display       Import (";
+    print color('bold yellow') unless ( $Colors eq 'off');
+    print "X";
+    print color('bold white') unless ( $Colors eq 'off');
+    print ")LS\n(";
     print color('bold yellow') unless ( $Colors eq 'off');
     print "G";
     print color('bold white') unless ( $Colors eq 'off');
@@ -2028,9 +2036,6 @@ sub delete_players {
   foreach(@players){
     my $player = $_;
     if ( ($players{$player}{'chips'} eq 0) or ($player !~ /\w/) ) {
-      if ( $^O =~ /MSWin32/ ) {
-        Win32::Sound::Play("loser.wav");
-      }
       # Add player to dead player array
       push @dead, "$player: $players{$player}{'won'}" unless ( $player !~ /\w/ );
 
@@ -2627,3 +2632,71 @@ sub version {
     return $version;
   }
 }
+
+sub select_file {
+
+  my $lastfile = '';
+  {
+    my ( @file, $file );
+    my ( @parms );
+    push @parms,
+      -filter =>
+        [ 'XLSX - Excel', '*.xlsx',
+          'XLS  - Excel', '*.xls',
+          'All Files - *', '*'
+        ],
+      -directory => "$desktop",
+      -title => 'Select a file';
+    push @parms, -file => $lastfile  if $lastfile;
+    @file = Win32::GUI::GetOpenFileName ( @parms );
+    if ( $file[0] =~ /xls/ ) {
+      read_xls_file($file[0]);
+    }
+  }
+}
+
+sub read_xls_file {
+
+  my $filename = shift;
+
+  my $ss = new Spreadsheet::BasicRead($filename) ||
+  die "Could not open '$filename': $!";
+ 
+  my $templine;
+  my @results;
+  my @push_to_players;
+  while (my $data = $ss->getNextRow())
+    {
+      my $count = 0;
+      foreach(@$data) {
+	my $line = $_;
+	$line =~ s/,//g;
+	$count++;
+	if (0 == $count % 2) {
+          $templine = "$templine".','."$line";
+	  push @results, $templine;
+        } else {
+          $templine = $line;
+	}
+      }
+    }
+  foreach(@results){
+    my $line = $_;
+    my @split = split /,/, $line;
+    my $name     = $split[0];
+    my $fargo    = $split[1];
+    my $fargo_id = 0;
+    chomp($name);
+    chomp($fargo);
+    if (( $name =~ /\w+/ ) && ( $fargo =~ /^\d\d\d+$/ )) {
+      my $chips = get_start_chips($fargo);
+      my $name = "$name ".'('."$fargo".')';
+      $players{$name}{'chips'}    = $chips;
+      $players{$name}{'table'}    = 'none';
+      $players{$name}{'fargo'}    = $fargo;
+      $players{$name}{'fargo_id'} = $fargo_id;
+      $players{$name}{'won'}      = 0;
+    }
+  }
+}
+
