@@ -101,11 +101,8 @@ my $storable_whobeat         = 'storable_whobeat.txt';
 my $storable_whobeat_csv     = 'storable_whobeat_csv.txt';
 my $storable_tourney_running = 'storable_tourney_running.txt';
 my $namestxt                 = 'names.txt';
-#my $desktop                 = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.txt';
 my $desktop                  = 'chip_results_'."$DATE".'.txt';
-#my $desktop_csv             = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.csv';
 my $desktop_csv              = 'chip_results_'."$DATE".'.csv';
-#my $outfile_xlsx            = 'chip_results_'."$abbr[$mon]"."_$mday"."_$year".'.xlsx';
 my $outfile_xlsx             = 'chip_results_'."$DATE".'.xlsx';
 
 if ( $^O =~ /MSWin32/ ) {
@@ -173,14 +170,8 @@ my $master_number_of_players = 0;
 my $outfile     = "$desktop";
 my $outfile_csv = "$desktop_csv";
 
-# Open log file
-#print "outfile is $outfile\n";
-open (OUTFILE,'>',$outfile) or die "Cannot open results file: $!";
-print OUTFILE "$abbr[$mon]".' '."$mday".' '."$year"."\n";
-print OUTFILE "Lightning Chip Tourney results:                      --by Martin Colello\n\n";
-
 # Setup some global hashes and variables
-my $version = 'v9.80';           # Installed version of software
+my $version = 'v9.81';           # Installed version of software
 my $remote_server_check = 1;     # Trigger whether or not to use sftp
 my $remote_user;                 # User id for remote display
 my $remote_pass;                 # Password for remote display
@@ -331,6 +322,8 @@ while(1) {
   # Delete players who have zero chips
   delete_players();
 
+  generate_xls();
+
   # Draw the screen
   draw_screen();
 
@@ -354,20 +347,8 @@ while(1) {
       draw_screen();
       print "\nEnd of tourney.\n";
 
-      # Print list of who beat who to log file
-      @whobeat = sort(@whobeat);
-      foreach(@whobeat) {
-	my $line = $_;
-        print OUTFILE "$_";
-      }
-      close OUTFILE;
-
       history();
 
-      # Open log file
-      #if ( $^O =~ /MSWin32/     ) { system("start notepad.exe \"$desktop\"") }
-      #if ( $^O =~ /MSWin32/     ) { system (1,"\"$desktop\"") }
-      if ( $^O =~ /next|darwin/ ) { system("open $desktop") }
       print "\n\nThank you for using Lightning Chip Tourney!\n\n";
       sleep 2;
       delete_storable();
@@ -1944,19 +1925,7 @@ sub quit_program {
   chomp($yesorno);
   if ( $yesorno eq 'y' ) {
     draw_screen();
-    print OUTFILE "$screen_contents\n\n";
-    @whobeat = sort(@whobeat);
-    foreach(@whobeat) {
-      print OUTFILE "$_";
-    }
-    close OUTFILE;
     print "\nEnd of tourney.\n";
-    #if ( $^O =~ /MSWin32/ ) {
-    #  system("start notepad.exe \"$desktop\"");
-    #}
-    if ( $^O =~ /next|darwin/ ) {
-      system("open $desktop");
-    }
     delete_storable();
     exit;
   } elsif ( $yesorno eq 'r' ) {
@@ -2400,57 +2369,11 @@ sub enter_shuffle_mode {
 }
 
 sub history {
-  #header();
-  print "Opening history file...\n";
-  open (OUTCSV, '>',$outfile_csv);
-  print OUTCSV "Player #1,,,Player #2,\n";
-  print OUTCSV "Fargo ID,Player Name,Score,Fargo ID,Player Name,Score,Date,Game,Table,Event\n";
-
-  foreach(@whobeat_csv) {
-    my $line       = $_;
-    my @split      = split /SPLIT/, $line;
-    my $winner     = $split[0];
-    my $loser      = $split[1];
-    my $table      = $split[2];
-    my $winner_id  = $split[3];
-    my $loser_id   = $split[4];
-    my $date_lost  = $split[5];
-
-    if ( $winner =~ /Vince Colello/ ) { $winner = 'Martin Colello' }
-    if ( $loser  =~ /Vince Colello/ ) { $loser  = 'Martin Colello' }
-
-    print OUTCSV "$winner_id,$winner,1,$loser_id,$loser,0,$date_lost,$game,$table,$event\n";
-  }
-
-  close OUTCSV;
-
-  open( TABFILE, "$outfile_csv" ) or die "$outfile_csv : $!";
- 
-  my $workbook  = Excel::Writer::XLSX->new( $outfile_xlsx );
-  my $worksheet = $workbook->add_worksheet();
- 
-  # Row and column are zero indexed
-  my $row = 0;
- 
-  while ( <TABFILE> ) {
-    chomp;
- 
-    # Split on single tab
-    my @fields = split( ',', $_ );
- 
-    my $col = 0;
-    for my $token ( @fields ) {
-        $worksheet->write( $row, $col, $token );
-        $col++;
-    }
-    $row++;
-  }
- 
-  $workbook->close();
 
   # Open log file
   #if ( $^O =~ /MSWin32/     ) { system ("\"$outfile_csv\"") }
-  if ( $^O =~ /MSWin32/     ) { system (1,"\"$outfile_xlsx\"") }
+  #if ( $^O =~ /MSWin32/     ) { system (1,"\"$outfile_xlsx\"") }
+  if ( $^O =~ /MSWin32/     ) { system (1,"\"$outfile_csv\"") }
   if ( $^O =~ /next|darwin/ ) { system("open $outfile_csv") }
 }
 
@@ -2698,5 +2621,60 @@ sub read_xls_file {
       $players{$name}{'won'}      = 0;
     }
   }
+}
+
+sub generate_xls {
+
+  open (OUTCSV, '>',$outfile_csv);
+  print OUTCSV "Player #1,,,Player #2,\n";
+  print OUTCSV "Fargo ID,Player Name,Score,Fargo ID,Player Name,Score,Date,Game,Table,Event\n";
+
+  foreach(@whobeat_csv) {
+    my $line       = $_;
+    my @split      = split /SPLIT/, $line;
+    my $winner     = $split[0];
+    my $loser      = $split[1];
+    my $table      = $split[2];
+    my $winner_id  = $split[3];
+    my $loser_id   = $split[4];
+    my $date_lost  = $split[5];
+
+    if ( $winner =~ /Vince Colello/ ) { $winner = 'Martin Colello' }
+    if ( $loser  =~ /Vince Colello/ ) { $loser  = 'Martin Colello' }
+
+    print OUTCSV "$winner_id,$winner,1,$loser_id,$loser,0,$date_lost,$game,$table,$event\n";
+  }
+
+  close OUTCSV;
+
+  open( TABFILE, "$outfile_csv" ) or die "$outfile_csv : $!";
+ 
+  my $workbook  = Excel::Writer::XLSX->new( $outfile_xlsx );
+  my $worksheet = $workbook->add_worksheet();
+  $worksheet->set_column( 1, 1, 20 );
+  $worksheet->set_column( 4, 4, 20 );
+  $worksheet->set_column( 6, 6, 25 );
+  $worksheet->set_column( 7, 7, 12 );
+  $worksheet->set_column( 9, 9, 25 );
+ 
+  # Row and column are zero indexed
+  my $row = 0;
+ 
+  while ( <TABFILE> ) {
+    chomp;
+ 
+    # Split on single tab
+    my @fields = split( ',', $_ );
+ 
+    my $col = 0;
+    for my $token ( @fields ) {
+        $worksheet->write( $row, $col, $token );
+        $col++;
+    }
+    $row++;
+  }
+ 
+  $workbook->close() or warn "$!";
+  close TABFILE;
 }
 
