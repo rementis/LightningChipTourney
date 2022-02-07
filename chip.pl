@@ -86,24 +86,25 @@ my $DATE  = "$hour".'_'."$min"."_$sec"."_$abbr[$mon]"."_$mday"."_$year";
 my $DATE2 = "$abbr[$mon]"."_$mday"."_$year";
 
 # Set files
-my $status                   = "$DATE".'status.html';
-my $remote_display           = 'remote_display.txt';
-my $fargo_storage_file       = 'fargo.txt';
-my $tournament_name          = 'tournament_name.txt';
-my $chip_rating_storage_file = 'chip_rating.txt';
-my $player_db                = 'chip_player.txt';
-my $storable_send            = 'storable_send.txt';
-my $storable_players         = 'storable_players.txt';
-my $storable_tables          = 'storable_tables.txt';
-my $storable_dead            = 'storable_dead.txt';
-my $storable_stack           = 'storable_stack.txt';
-my $storable_whobeat         = 'storable_whobeat.txt';
-my $storable_whobeat_csv     = 'storable_whobeat_csv.txt';
-my $storable_tourney_running = 'storable_tourney_running.txt';
-my $namestxt                 = 'names.txt';
-my $desktop                  = 'chip_results_'."$DATE".'.txt';
-my $desktop_csv              = 'chip_results_'."$DATE".'.csv';
-my $outfile_xlsx             = 'chip_results_'."$DATE".'.xlsx';
+my $status                            = "$DATE".'status.html';
+my $remote_display                    = 'remote_display.txt';
+my $fargo_storage_file                = 'fargo.txt';
+my $tournament_name                   = 'tournament_name.txt';
+my $chip_rating_storage_file          = 'chip_rating.txt';
+my $player_db                         = 'chip_player.txt';
+my $storable_send                     = 'storable_send.txt';
+my $storable_players                  = 'storable_players.txt';
+my $storable_tables                   = 'storable_tables.txt';
+my $storable_dead                     = 'storable_dead.txt';
+my $storable_stack                    = 'storable_stack.txt';
+my $storable_whobeat                  = 'storable_whobeat.txt';
+my $storable_whobeat_csv              = 'storable_whobeat_csv.txt';
+my $storable_tourney_running          = 'storable_tourney_running.txt';
+my $storable_master_number_of_players = 'storable_master_number_of_players.txt';
+my $namestxt                          = 'names.txt';
+my $desktop                           = 'chip_results_'."$DATE".'.txt';
+my $desktop_csv                       = 'chip_results_'."$DATE".'.csv';
+my $outfile_xlsx                      = 'chip_results_'."$DATE".'.xlsx';
 
 if ( $^O =~ /MSWin32/ ) {
   system("title Lightning Tournament");
@@ -124,38 +125,40 @@ if ( $^O =~ /MSWin32/ ) {
 
 
   if ( exists $ENV{'LOCALAPPDATA'} ) {
-    my $local_app_data        = $ENV{'LOCALAPPDATA'};
-    $status                   = "$local_app_data\\$status";
-    $remote_display           = "$local_app_data\\$remote_display";
-    $fargo_storage_file       = "$local_app_data\\$fargo_storage_file";
-    $chip_rating_storage_file = "$local_app_data\\$chip_rating_storage_file";
-    $player_db                = "$local_app_data\\$player_db";
-    $storable_send            = "$local_app_data\\$storable_send";
-    $storable_players         = "$local_app_data\\$storable_players";
-    $storable_tables          = "$local_app_data\\$storable_tables";
-    $storable_dead            = "$local_app_data\\$storable_dead";
-    $storable_stack           = "$local_app_data\\$storable_stack";
-    $storable_whobeat         = "$local_app_data\\$storable_whobeat";
-    $storable_whobeat_csv     = "$local_app_data\\$storable_whobeat_csv";
-    $storable_tourney_running = "$local_app_data\\$storable_tourney_running";
-    $namestxt                 = "$local_app_data\\$namestxt";
-    $tournament_name          = "$local_app_data\\$tournament_name";
+    my $local_app_data                 = $ENV{'LOCALAPPDATA'};
+    $status                            = "$local_app_data\\$status";
+    $remote_display                    = "$local_app_data\\$remote_display";
+    $fargo_storage_file                = "$local_app_data\\$fargo_storage_file";
+    $chip_rating_storage_file          = "$local_app_data\\$chip_rating_storage_file";
+    $player_db                         = "$local_app_data\\$player_db";
+    $storable_send                     = "$local_app_data\\$storable_send";
+    $storable_players                  = "$local_app_data\\$storable_players";
+    $storable_tables                   = "$local_app_data\\$storable_tables";
+    $storable_dead                     = "$local_app_data\\$storable_dead";
+    $storable_stack                    = "$local_app_data\\$storable_stack";
+    $storable_whobeat                  = "$local_app_data\\$storable_whobeat";
+    $storable_whobeat_csv              = "$local_app_data\\$storable_whobeat_csv";
+    $storable_tourney_running          = "$local_app_data\\$storable_tourney_running";
+    $storable_master_number_of_players = "$local_app_data\\$storable_master_number_of_players";
+    $namestxt                          = "$local_app_data\\$namestxt";
+    $tournament_name                   = "$local_app_data\\$tournament_name";
   } else {
-    $status                   = $profile . "\\desktop\\$status";
-    $remote_display           = $profile . "\\desktop\\$remote_display";
-    $fargo_storage_file       = $profile . "\\desktop\\$fargo_storage_file";
-    $chip_rating_storage_file = $profile . "\\desktop\\$chip_rating_storage_file";
-    $player_db                = $profile . "\\desktop\\$player_db";
-    $storable_send            = $profile . "\\desktop\\$storable_send";
-    $storable_players         = $profile . "\\desktop\\$storable_players";
-    $storable_tables          = $profile . "\\desktop\\$storable_tables";
-    $storable_dead            = $profile . "\\desktop\\$storable_dead";
-    $storable_stack           = $profile . "\\desktop\\$storable_stack";
-    $storable_whobeat         = $profile . "\\desktop\\$storable_whobeat";
-    $storable_whobeat_csv     = $profile . "\\desktop\\$storable_whobeat_csv";
-    $storable_tourney_running = $profile . "\\desktop\\$storable_tourney_running";
-    $namestxt                 = $profile . "\\desktop\\$namestxt";
-    $tournament_name          = $profile . "\\desktop\\$tournament_name";
+    $status                            = $profile . "\\desktop\\$status";
+    $remote_display                    = $profile . "\\desktop\\$remote_display";
+    $fargo_storage_file                = $profile . "\\desktop\\$fargo_storage_file";
+    $chip_rating_storage_file          = $profile . "\\desktop\\$chip_rating_storage_file";
+    $player_db                         = $profile . "\\desktop\\$player_db";
+    $storable_send                     = $profile . "\\desktop\\$storable_send";
+    $storable_players                  = $profile . "\\desktop\\$storable_players";
+    $storable_tables                   = $profile . "\\desktop\\$storable_tables";
+    $storable_dead                     = $profile . "\\desktop\\$storable_dead";
+    $storable_stack                    = $profile . "\\desktop\\$storable_stack";
+    $storable_whobeat                  = $profile . "\\desktop\\$storable_whobeat";
+    $storable_whobeat_csv              = $profile . "\\desktop\\$storable_whobeat_csv";
+    $storable_tourney_running          = $profile . "\\desktop\\$storable_tourney_running";
+    $storable_master_number_of_players = $profile . "\\desktop\\$storable_master_number_of_players";
+    $namestxt                          = $profile . "\\desktop\\$namestxt";
+    $tournament_name                   = $profile . "\\desktop\\$tournament_name";
   }
 }
 
@@ -1240,14 +1243,15 @@ sub loser {
     shuffle_stack('yes');
   }
 
-  store \$send,            "$storable_send";
-  store \%players,         "$storable_players";
-  store \%tables,          "$storable_tables";
-  store \@dead,            "$storable_dead";
-  store \@stack,           "$storable_stack";
-  store \@whobeat,         "$storable_whobeat";
-  store \@whobeat_csv,     "$storable_whobeat_csv";
-  store \$tourney_running, "$storable_tourney_running";
+  store \$send,                     "$storable_send";
+  store \%players,                  "$storable_players";
+  store \%tables,                   "$storable_tables";
+  store \@dead,                     "$storable_dead";
+  store \@stack,                    "$storable_stack";
+  store \@whobeat,                  "$storable_whobeat";
+  store \@whobeat_csv,              "$storable_whobeat_csv";
+  store \$tourney_running,          "$storable_tourney_running";
+  store \$master_number_of_players, "$storable_master_number_of_players";
 }
 
 sub undo_last_loser {
@@ -2232,14 +2236,15 @@ sub game_and_event {
     if ( $yesorno =~ /r/ ) {
       print "Restoring previous tournament.\n";
       sleep 2;
-      $send            = ${retrieve("$storable_send")};
-      %players         = %{retrieve("$storable_players")};
-      %tables          = %{retrieve("$storable_tables")};
-      @dead            = @{retrieve("$storable_dead")};
-      @stack           = @{retrieve("$storable_stack")};
-      @whobeat         = @{retrieve("$storable_whobeat")};
-      @whobeat_csv     = @{retrieve("$storable_whobeat_csv")};
-      $tourney_running = ${retrieve("$storable_tourney_running")};
+      $send                     = ${retrieve("$storable_send")};
+      %players                  = %{retrieve("$storable_players")};
+      %tables                   = %{retrieve("$storable_tables")};
+      @dead                     = @{retrieve("$storable_dead")};
+      @stack                    = @{retrieve("$storable_stack")};
+      @whobeat                  = @{retrieve("$storable_whobeat")};
+      @whobeat_csv              = @{retrieve("$storable_whobeat_csv")};
+      $tourney_running          = ${retrieve("$storable_tourney_running")};
+      $master_number_of_players = ${retrieve("$storable_master_number_of_players")};
       return;
     }
   }
@@ -2535,6 +2540,7 @@ sub delete_storable {
   unlink("$storable_whobeat");
   unlink("$storable_whobeat_csv");
   unlink("$storable_tourney_running");
+  unlink("$storable_master_number_of_players");
   unlink("$status");
 }
 
