@@ -174,7 +174,7 @@ my $outfile     = "$desktop";
 my $outfile_csv = "$desktop_csv";
 
 # Setup some global hashes and variables
-my $version = 'v9.81';           # Installed version of software
+my $version = 'v9.82';           # Installed version of software
 my $remote_server_check = 1;     # Trigger whether or not to use sftp
 my $remote_user;                 # User id for remote display
 my $remote_pass;                 # Password for remote display
@@ -2594,37 +2594,31 @@ sub read_xls_file {
   my $templine;
   my @results;
   my @push_to_players;
+
   while (my $data = $ss->getNextRow())
     {
+      no warnings qw(uninitialized);
       my $count = 0;
-      foreach(@$data) {
-	my $line = $_;
-	$line =~ s/,//g;
-	$count++;
-	if (0 == $count % 2) {
-          $templine = "$templine".','."$line";
-	  push @results, $templine;
-        } else {
-          $templine = $line;
-	}
-      }
+      push @results, join(',',@$data,"\n");
     }
   foreach(@results){
     my $line = $_;
-    my @split = split /,/, $line;
-    my $name     = $split[0];
-    my $fargo    = $split[1];
-    my $fargo_id = 0;
-    chomp($name);
-    chomp($fargo);
-    if (( $name =~ /\w+/ ) && ( $fargo =~ /^\d\d\d+$/ )) {
-      my $chips = get_start_chips($fargo);
-      my $name = "$name ".'('."$fargo".')';
-      $players{$name}{'chips'}    = $chips;
-      $players{$name}{'table'}    = 'none';
-      $players{$name}{'fargo'}    = $fargo;
-      $players{$name}{'fargo_id'} = $fargo_id;
-      $players{$name}{'won'}      = 0;
+    if ( $line =~ /\w+,\d\d\d/ ) {
+      $line =~ /([\/-\w\s]+),(\d\d\d)/;
+      my $name  = $1;
+      my $fargo = $2;
+      my $fargo_id = 0;
+      chomp($name);
+      chomp($fargo);
+      if (( $name =~ /\w+/ ) && ( $fargo =~ /^\d\d\d+$/ )) {
+        my $chips = get_start_chips($fargo);
+        my $name = "$name ".'('."$fargo".')';
+        $players{$name}{'chips'}    = $chips;
+        $players{$name}{'table'}    = 'none';
+        $players{$name}{'fargo'}    = $fargo;
+        $players{$name}{'fargo_id'} = $fargo_id;
+        $players{$name}{'won'}      = 0;
+      }
     }
   }
 }
