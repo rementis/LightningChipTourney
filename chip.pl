@@ -174,7 +174,7 @@ my $outfile     = "$desktop";
 my $outfile_csv = "$desktop_csv";
 
 # Setup some global hashes and variables
-my $version = 'v9.82';           # Installed version of software
+my $version = 'v9.83';           # Installed version of software
 my $remote_server_check = 1;     # Trigger whether or not to use sftp
 my $remote_user;                 # User id for remote display
 my $remote_pass;                 # Password for remote display
@@ -1953,10 +1953,13 @@ sub yesorno {
       $done = 1 if $choice eq 'N';
       $done = 1 if $choice eq 'R';
       $done = 1 if $choice eq 'S';
+      $done = 1 if $choice eq 'D';
       $done = 1 if $any eq 'any';
     }
   }
   ReadMode 0;
+  if (( $choice eq 'D' ) && ( $any eq 'sord' )) { return 'd' }
+  if (( $choice eq 'S' ) && ( $any eq 'sord' )) { return 's' }
   if ( $choice eq 'Y' ) { return 'y' }
   if ( $choice eq 'N' ) { return 'n' }
   if ( $choice eq 'R' ) { return 'r' }
@@ -2586,7 +2589,12 @@ sub select_file {
 
 sub read_xls_file {
 
+  header();
   my $filename = shift;
+
+  print "\n\n\n(S)ingles or Scotch (D)oubles?  (S/D)\n";
+  my $sord = yesorno('sord');
+  print "sord is $sord\n";
 
   my $ss = new Spreadsheet::BasicRead($filename) ||
   die "Could not open '$filename': $!";
@@ -2601,26 +2609,63 @@ sub read_xls_file {
       my $count = 0;
       push @results, join(',',@$data,"\n");
     }
-  foreach(@results){
-    my $line = $_;
-    if ( $line =~ /\w+,\d\d\d/ ) {
-      $line =~ /([\/-\w\s]+),(\d\d\d)/;
-      my $name  = $1;
-      my $fargo = $2;
-      my $fargo_id = 0;
-      chomp($name);
-      chomp($fargo);
-      if (( $name =~ /\w+/ ) && ( $fargo =~ /^\d\d\d+$/ )) {
-        my $chips = get_start_chips($fargo);
-        my $name = "$name ".'('."$fargo".')';
-        $players{$name}{'chips'}    = $chips;
-        $players{$name}{'table'}    = 'none';
-        $players{$name}{'fargo'}    = $fargo;
-        $players{$name}{'fargo_id'} = $fargo_id;
-        $players{$name}{'won'}      = 0;
+  if ( $sord eq 's' ) {
+    foreach(@results){
+      my $line = $_;
+      if ( $line =~ /\w+,\d\d\d/ ) {
+        $line =~ /([\/-\w\s]+),(\d\d\d),(\d+)/;
+        my $name  = $1;
+        my $fargo = $2;
+        my $chips = $3;
+        my $fargo_id = 0;
+        chomp($name);
+        chomp($fargo);
+        if (( $name =~ /\w+/ ) && ( $fargo =~ /^\d\d\d+$/ )) {
+          #my $chips = get_start_chips($fargo);
+          my $name = "$name ".'('."$fargo".')';
+          $players{$name}{'chips'}    = $chips;
+          $players{$name}{'table'}    = 'none';
+          $players{$name}{'fargo'}    = $fargo;
+          $players{$name}{'fargo_id'} = $fargo_id;
+          $players{$name}{'won'}      = 0;
+        }
       }
     }
-  }
+  } 
+  if ( $sord eq 'd' ) {
+    foreach(@results){
+      my $line = $_;
+      print "line: $line\n";
+      if ( $line =~ /\w+,\d\d\d/ ) {
+	      print "line is $line\n";
+        $line =~ /([\/-\w\s]+),(\d\d\d),([\/-\w\s]+),(\d\d\d),(\d+),(\d+)/;
+        my $name        = $1;
+        my $fargo       = $2;
+        my $name2       = $3;
+        my $fargo2      = $4;
+        my $chips       = $6;
+        my $fargo_id    = 0;
+	my $fargo_total = $fargo + $fargo2;
+        chomp($name);
+        chomp($name2);
+        chomp($fargo);
+        chomp($fargo2);
+        chomp($fargo_total);
+        if (( $name =~ /\w+/ ) && ( $fargo =~ /^\d\d\d+$/ )) {
+  	  $name  =~ /(\w+)\s+(\w)/;
+	  $name  = "$1 $2" unless (( ! defined($1) ) or ( ! defined($2) ));
+	  $name2 =~ /(\w+)\s+(\w)/;
+	  $name2 = "$1 $2" unless (( ! defined($1) ) or ( ! defined($2) ));
+	  my $combined_name = "$name-$name2 ".'('."$fargo_total".')';
+          $players{$combined_name}{'chips'}    = $chips;
+          $players{$combined_name}{'table'}    = 'none';
+          $players{$combined_name}{'fargo'}    = $fargo_total;
+          $players{$combined_name}{'fargo_id'} = $fargo_id;
+          $players{$combined_name}{'won'}      = 0;
+        }
+      }
+    }
+  } 
 }
 
 sub generate_xls {
