@@ -174,7 +174,7 @@ my $outfile     = "$desktop";
 my $outfile_csv = "$desktop_csv";
 
 # Setup some global hashes and variables
-my $version = 'v9.83';           # Installed version of software
+my $version = 'v9.84';           # Installed version of software
 my $remote_server_check = 1;     # Trigger whether or not to use sftp
 my $remote_user;                 # User id for remote display
 my $remote_pass;                 # Password for remote display
@@ -541,7 +541,7 @@ END_HEADER
 
   header();
 
-  print STATUS "\nLightning Chip Tourney          Players: $number_of_players              --by Martin Colello\n\n\n";
+  print STATUS "\nLightning Chip Tourney          Players: $number_of_players ($master_number_of_players)          --by Martin Colello\n\n\n";
 
   my $stack_num = @stack;
   if ( $stack_num < 2 ) {
@@ -2091,15 +2091,15 @@ sub header {
 
   if ( $shuffle_mode eq 'off' ) {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY $version           Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY $version       Players: $number_of_players ($master_number_of_players)       $TIME                                 --by Martin Colello    ", 'bright_yellow on_blue'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print         "\nLIGHTNING CHIP TOURNEY $version           Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY $version       Players: $number_of_players ($master_number_of_players)       $TIME                                 --by Martin Colello\n\n\n";
     }
   } else {
     if ( $Colors eq 'on' ) { 
-      print colored("\nLIGHTNING CHIP TOURNEY $version  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
+      print colored("\nLIGHTNING CHIP TOURNEY $version  SHUFFLE  Players: $number_of_players ($master_number_of_players)       $TIME                             --by Martin Colello    ", 'bright_yellow on_red'), "\n\n\n";
     } elsif ( $Colors eq 'off' ) {
-      print         "\nLIGHTNING CHIP TOURNEY $version  SHUFFLE  Players: $number_of_players        $TIME                                 --by Martin Colello\n\n\n";
+      print         "\nLIGHTNING CHIP TOURNEY $version  SHUFFLE  Players: $number_of_players ($master_number_of_players)       $TIME                             --by Martin Colello\n\n\n";
     }
   }
 
