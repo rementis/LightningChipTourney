@@ -174,7 +174,7 @@ my $outfile     = "$desktop";
 my $outfile_csv = "$desktop_csv";
 
 # Setup some global hashes and variables
-my $version = 'v9.84';           # Installed version of software
+my $version = 'v9.85';           # Installed version of software
 my $remote_server_check = 1;     # Trigger whether or not to use sftp
 my $remote_user;                 # User id for remote display
 my $remote_pass;                 # Password for remote display
@@ -500,7 +500,7 @@ sub draw_screen {
   <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
-<meta http-equiv="refresh" content="8" >
+<meta http-equiv="refresh" content="4" >
 <head>
 <title>Lightning Tourney --by Martin Colello</title>
 </head>
@@ -815,7 +815,23 @@ END_HEADER
           print STATUS columnize(\@dead_display,{displaywidth=>140,colsep=>'     '});
         }
       }
-    print STATUS "</p>\n";
+        print STATUS "</p>\n";
+        print STATUS "<p style=\"color:black\">\n";
+        print STATUS "<br><BR>Fargo List:<br>\n";
+        my @list_players = keys(%players);
+        push(@list_players, @dead);
+        my @output_list_players;
+        foreach(@list_players) {
+          my $line = $_;
+	  if ( $line !~ / \(\d\d\d\)/ ) { next }
+          $line =~ /(.*?)\(/;
+	  my $temp_player_name = $1;
+          $line =~ /(\d\d\d)/;
+	  my $temp_fargo = $1;
+          push @output_list_players, "$temp_player_name ($temp_fargo)";
+        }
+        print STATUS columnize(\@output_list_players,{displaywidth=>140,colsep=>'     '});
+        print STATUS "</p>\n";
     my $color  = 'bold white';
     print color($color) unless ( $Colors eq 'off');;
 
