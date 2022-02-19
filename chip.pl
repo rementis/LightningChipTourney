@@ -2296,6 +2296,18 @@ sub game_and_event {
   print TOURNEYNAME "$event";
   close TOURNEYNAME;
 
+  if (( $event =~ /skip/i ) && ( $event =~ /jan/i )){
+    # Add tables automatically for Skip and Jan's barboxes
+    $tables{'9'} =1;
+    $tables{'10'}=1;
+    $tables{'11'}=1;
+    $tables{'12'}=1;
+    $tables{'13'}=1;
+    $tables{'14'}=1;
+    $tables{'15'}=1;
+    $tables{'16'}=1;
+  }
+
   print color('bold white') unless ( $Colors eq 'off');
   print "\n\nPlease enter game type or hit Enter for \"Nine Ball\":\n";
   print color('bold cyan') unless ( $Colors eq 'off');
