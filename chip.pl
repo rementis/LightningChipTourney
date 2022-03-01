@@ -1,57 +1,12 @@
 #!/usr/bin/perl
 
-########################################################
-#                                                      #
-# Lightening Chip Tourney                              #
-#     Martin Colello                                   #
-#   April/May/June 2018                                #
-#                                                      #
-# Add move table Aug 2018                              #
-#                                                      #
-# Add player db Oct 2018                               #
-#                                                      #
-# Auto shuffle when only two players left May 2019     #
-#                                                      #
-# Add ability to undo most recent win June 2020        #
-#                                                      #
-# Add time tracking June 2021                          #
-#                                                      #
-# Add split screen June 2021                           #
-#                                                      #
-# Fix too long player name issue July 2021             #
-#                                                      #
-# Fix fargo missing from log issue Aug 2021            #
-#                                                      #
-# Add Forfeit subroutine September 2021                #
-#                                                      #
-# Fix issue with user containing spaces Sep 2021       #
-#                                                      #
-# Add five levels of undo Oct 2021                     #
-#                                                      #
-# Store tournament name and create xls report Oct 2021 #
-#                                                      #
-# Add Send to Undo November 2021                       #
-#                                                      #
-# Add bottom bar and adjust position Dec 2021          #
-#                                                      #
-# Increase to three columns Dec 2021                   #
-#                                                      #
-# Capitalize first letter of each word in player name  #
-# Dec 2021                                             #
-#                                                      #
-# Create remote display                                #
-# Jan 2021                                             #
-#                                                      #
-# Automated version check                              #
-# Jan 2021                                             #
-#                                                      #
-# Remove question for fargo ID as it's rarely used     #
-# Jan 2022                                             #
-#                                                      #
-# Delete player using multi column if over 20 players  #
-# Jan 2022                                             #
-#                                                      #
-########################################################
+###########################
+#                         #
+# Lightening Chip Tourney #
+#     Martin Colello      #
+#   April/May/June 2018   #
+#                         #
+###########################
 
 use strict;
 use HTTP::Tiny;
@@ -68,185 +23,47 @@ use Net::Ping;
 use File::Path qw( make_path );
 use Win32::GUI();
 use Spreadsheet::BasicRead;
+use Schedule::Poll;
 use if $^O eq "MSWin32", "Win32::Sound";
 
-$SIG{INT} = 'IGNORE';
+#$SIG{INT} = 'IGNORE';
 
-# Get current date
-my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
-if ( $min < 10 ) { $min = "0$min" }
-if ( $sec < 10 ) { $sec = "0$sec" }
-$year = $year + 1900;
+my $DATE  = get_current_date();
+my $DATE2 = get_current_date('2');
 
-my @abbr = qw(January February March April May June July August September October November December);
-if ( $hour > 12 ) {
-  $hour = $hour - 12;
-}
-my $DATE  = "$hour".'_'."$min"."_$sec"."_$abbr[$mon]"."_$mday"."_$year";
-my $DATE2 = "$abbr[$mon]"."_$mday"."_$year";
+my ($status,$remote_display,$fargo_storage_file,$tournament_name,$chip_rating_storage_file,$player_db);
+my ($storable_send,$storable_players,$storable_tables,$storable_dead,$storable_stack,$storable_whobeat);
+my ($storable_whobeat_csv,$storable_tourney_running,$storable_master_number_of_players,$namestxt);
+my ($desktop,$desktop_csv,$outfile_xlsx,$outfile,$outfile_csv);
 
-# Set files
-my $status                            = "$DATE".'status.html';
-my $remote_display                    = 'remote_display.txt';
-my $fargo_storage_file                = 'fargo.txt';
-my $tournament_name                   = 'tournament_name.txt';
-my $chip_rating_storage_file          = 'chip_rating.txt';
-my $player_db                         = 'chip_player.txt';
-my $storable_send                     = 'storable_send.txt';
-my $storable_players                  = 'storable_players.txt';
-my $storable_tables                   = 'storable_tables.txt';
-my $storable_dead                     = 'storable_dead.txt';
-my $storable_stack                    = 'storable_stack.txt';
-my $storable_whobeat                  = 'storable_whobeat.txt';
-my $storable_whobeat_csv              = 'storable_whobeat_csv.txt';
-my $storable_tourney_running          = 'storable_tourney_running.txt';
-my $storable_master_number_of_players = 'storable_master_number_of_players.txt';
-my $namestxt                          = 'names.txt';
-my $desktop                           = 'chip_results_'."$DATE".'.txt';
-my $desktop_csv                       = 'chip_results_'."$DATE".'.csv';
-my $outfile_xlsx                      = 'chip_results_'."$DATE".'.xlsx';
-
-if ( $^O =~ /MSWin32/ ) {
-  system("title Lightning Tournament");
-  chomp(my $profile = `set userprofile`);
-  $profile          =~ s/userprofile=//i;
-  my $homedir       = $profile . "\\desktop\\Chip_Results";
-
-  # If desktop folder exists do nothing, if not then create it
-  if ( -d $homedir ) {
-    print "Homedir $homedir exists.\n";
-  } else {
-    make_path($homedir);
-  }
-
-  $desktop      = $profile . "\\desktop\\Chip_Results\\$desktop";
-  $desktop_csv  = $profile . "\\desktop\\Chip_Results\\$desktop_csv";
-  $outfile_xlsx = $profile . "\\desktop\\Chip_Results\\$outfile_xlsx";
-
-
-  if ( exists $ENV{'LOCALAPPDATA'} ) {
-    my $local_app_data                 = $ENV{'LOCALAPPDATA'};
-    $status                            = "$local_app_data\\$status";
-    $remote_display                    = "$local_app_data\\$remote_display";
-    $fargo_storage_file                = "$local_app_data\\$fargo_storage_file";
-    $chip_rating_storage_file          = "$local_app_data\\$chip_rating_storage_file";
-    $player_db                         = "$local_app_data\\$player_db";
-    $storable_send                     = "$local_app_data\\$storable_send";
-    $storable_players                  = "$local_app_data\\$storable_players";
-    $storable_tables                   = "$local_app_data\\$storable_tables";
-    $storable_dead                     = "$local_app_data\\$storable_dead";
-    $storable_stack                    = "$local_app_data\\$storable_stack";
-    $storable_whobeat                  = "$local_app_data\\$storable_whobeat";
-    $storable_whobeat_csv              = "$local_app_data\\$storable_whobeat_csv";
-    $storable_tourney_running          = "$local_app_data\\$storable_tourney_running";
-    $storable_master_number_of_players = "$local_app_data\\$storable_master_number_of_players";
-    $namestxt                          = "$local_app_data\\$namestxt";
-    $tournament_name                   = "$local_app_data\\$tournament_name";
-  } else {
-    $status                            = $profile . "\\desktop\\$status";
-    $remote_display                    = $profile . "\\desktop\\$remote_display";
-    $fargo_storage_file                = $profile . "\\desktop\\$fargo_storage_file";
-    $chip_rating_storage_file          = $profile . "\\desktop\\$chip_rating_storage_file";
-    $player_db                         = $profile . "\\desktop\\$player_db";
-    $storable_send                     = $profile . "\\desktop\\$storable_send";
-    $storable_players                  = $profile . "\\desktop\\$storable_players";
-    $storable_tables                   = $profile . "\\desktop\\$storable_tables";
-    $storable_dead                     = $profile . "\\desktop\\$storable_dead";
-    $storable_stack                    = $profile . "\\desktop\\$storable_stack";
-    $storable_whobeat                  = $profile . "\\desktop\\$storable_whobeat";
-    $storable_whobeat_csv              = $profile . "\\desktop\\$storable_whobeat_csv";
-    $storable_tourney_running          = $profile . "\\desktop\\$storable_tourney_running";
-    $storable_master_number_of_players = $profile . "\\desktop\\$storable_master_number_of_players";
-    $namestxt                          = $profile . "\\desktop\\$namestxt";
-    $tournament_name                   = $profile . "\\desktop\\$tournament_name";
-  }
-}
-
-
-# Hold state of screen in case we need to exit program
-my $screen_contents;
-
-# Keep record of number of players so we can split screen if needed
-my $master_number_of_players = 0;
-
-# Set outfile for final results
-my $outfile     = "$desktop";
-my $outfile_csv = "$desktop_csv";
+setup_files();
+setup_folders();
 
 # Setup some global hashes and variables
-my $version = 'v9.85';           # Installed version of software
+my $version = 'v9.86';           # Installed version of software
+my $master_number_of_players = 0;
 my $remote_server_check = 1;     # Trigger whether or not to use sftp
-my $remote_user;                 # User id for remote display
-my $remote_pass;                 # Password for remote display
-my $remote_server;               # Remote server for display
+my ($remote_user,$remote_pass);  # User id for remote display
 my $color  = 'bold white';       # Default text color to start with
-my $key;                         # Generic holder for hash keys
-my %players;                     # Hash which contains tourney players
-my %tables;                      # Hash which contains billiard tables in use
+my ($key,$event,$remote_server,$screen_contents);
+my (%players,%tables);           # Hashes for players and tables
 my $tourney_running = 0;         # Determine if tourney is currently started
-my @stack;                       # Array used to keep the players in order
-my @dead;                        # Hold list of players with zero chips
-my @whobeat;                     # Record who beat who
-my @whobeat_csv;                 # Record who beat who for spreadsheet
 my $Colors = 'on';               # Keep track if user wants color display turned off
 my $player_standup = 'none';     # For undo tracking
 my $game = 'none';               # Store game type (8/9/10 ball)
-my $event;                       # Store Event name (Martin's Chip Tourney etc)
 my $shuffle_mode = 'off';        # Keep track of shuffle mode off/on
 my $send = 'none';               # Keep track of send new player to table information
 my $undo_last_loser_count = 0;   # Keep track of level of undo
-my $undo_fargo_id;
-my $undo_won;
-my $undo_chips;
-my $tourney_name;
-my $shuffle_mode_undo    = 'off';
-my $shuffle_mode_undo2   = 'off';
-my $shuffle_mode_undo3   = 'off';
-my $shuffle_mode_undo4   = 'off';
-my $shuffle_mode_undo5   = 'off';
-my $shuffle_mode_restart = 'off';
-my $send1 = "\n\n";
-my $send2 = "\n\n";
-my $send3 = "\n\n";
-my $send4 = "\n\n";
-my $send5 = "\n\n";
-my $send_restart = "\n\n";
-my %backup_players;
-my %backup_players2;
-my %backup_players3;
-my %backup_players4;
-my %backup_players5;
-my %backup_players_restart;
-my %backup_tables;
-my %backup_tables2;
-my %backup_tables3;
-my %backup_tables4;
-my %backup_tables5;
-my %backup_tables_restart;
-my @backup_dead;
-my @backup_dead2;
-my @backup_dead3;
-my @backup_dead4;
-my @backup_dead5;
-my @backup_dead_restart;
-my @backup_stack;
-my @backup_stack2;
-my @backup_stack3;
-my @backup_stack4;
-my @backup_stack5;
-my @backup_stack_restart;
-my @backup_whobeat;
-my @backup_whobeat2;
-my @backup_whobeat3;
-my @backup_whobeat4;
-my @backup_whobeat5;
-my @backup_whobeat_restart;
-my @backup_whobeatcsv;
-my @backup_whobeatcsv2;
-my @backup_whobeatcsv3;
-my @backup_whobeatcsv4;
-my @backup_whobeatcsv5;
-my @backup_whobeatcsv_restart;
+my (@stack,@dead,@whobeat,@whobeat_csv);
+my ($undo_fargo_id,$undo_won,$undo_chips,$tourney_name);
+my ($shuffle_mode_undo,$shuffle_mode_undo2,$shuffle_mode_undo3,$shuffle_mode_undo4,$shuffle_mode_undo5,$shuffle_mode_restart) = ('off') x 6;
+my ($send1,$send2,$send3,$send4,$send5,$send_restart) = ("\n\n") x 6;
+my (%backup_players,%backup_players2,%backup_players3,%backup_players4,%backup_players5,%backup_players_restart);
+my (%backup_tables,%backup_tables2,%backup_tables3,%backup_tables4,%backup_tables5,%backup_tables_restart);
+my (@backup_dead,@backup_dead2,@backup_dead3,@backup_dead4,@backup_dead5,@backup_dead_restart);
+my (@backup_stack,@backup_stack2,@backup_stack3,@backup_stack4,@backup_stack5,@backup_stack_restart);
+my (@backup_whobeat,@backup_whobeat2,@backup_whobeat3,@backup_whobeat4,@backup_whobeat5,@backup_whobeat_restart);
+my (@backup_whobeatcsv,@backup_whobeatcsv2,@backup_whobeatcsv3,@backup_whobeatcsv4,@backup_whobeatcsv5,@backup_whobeatcsv_restart);
 my $chips_8 = 461;
 my $chips_7 = 521;
 my $chips_6 = 581;
@@ -255,177 +72,27 @@ my $chips_4 = 1001;
 my $check_version = version();
 
 read_remote_display();
-
-print color($color) unless ( $Colors eq 'off');
-
-# Set the size of the console
-if ( $^O =~ /MSWin32/ ) {
-  system("mode con lines=35 cols=140");
-}
-if ( $^O =~ /darwin/ ) {
-  system("osascript -e 'tell app \"Terminal\" to set background color of first window to {0, 0, 0, -16373}'");
-  system("osascript -e 'tell app \"Terminal\" to set font size of first window to \"12\"'");
-  system("osascript -e 'tell app \"Terminal\" to set bounds of front window to {300, 30, 1200, 900}'");
-}
-
-# If names.txt exits populate the tourney with sample data
-if ( -e $namestxt ) {
-  my $filename = $namestxt;
-  open my $handle, '<', $filename;
-  my @names = <$handle>;
-  close $handle;
-  chomp(@names);
-  foreach(@names) {
-    my $line = $_;
-    my @split = split /:/, $line;
-    my $player_name = $split[0];
-    $players{$player_name}{'chips'} = $split[1];
-    $players{$player_name}{'table'} = $split[2];
-    $players{$player_name}{'fargo_id'} = $split[3];
-    $players{$player_name}{'won'} = 0;
-  }
-  $tables{'5'}=1;
-}
-if ( -e $tournament_name ) {
-  my $filename = $tournament_name;
-  open my $handle, '<', $filename;
-  $tourney_name = <$handle>;
-  chomp($tourney_name);
-  close $handle;
-}
-
-# print Lightning Chip Logo
-print "\n\n\n\n\n";
-print " _     _       _     _         _                ____ _     _       \n";
-print "| |   (_) __ _| |__ | |_ _ __ (_)_ __   __ _   / ___| |__ (_)_ __  \n";
-print "| |   | |/ _` | '_ \\| __| '_ \\| | '_ \\ / _` | | |   | '_ \\| | '_ \\ \n";
-print "| |___| | (_| | | | | |_| | | | | | | | (_| | | |___| | | | | |_)|\n";
-print "|_____|_|\\__, |_| |_|\\__|_| |_|_|_| |_|\\__, |  \\____|_| |_|_| .__/ \n";
-print "         |___/                         |___/                |_|    \n\n\n\n\n\n";
-print "                                           --by Martin Colello\n";
-
-# Play sound effect
-if ( $^O =~ /MSWin32/ ) {
-  Win32::Sound::Play("lightning.wav");
-}
-if ( $^O =~ /linux/ ) {
-  my $paplay = '/usr/bin/paplay';
-  if ( -e $paplay ) {
-    system '/usr/bin/paplay', 'lightning.wav';
-  }
-}
-
-sleep 1;
-
+set_size_of_console();
+populate_sample_data();
+print_logo();
 game_and_event();
+ 
+# Main loop
 
-# MAIN LOOP of program
 while(1) {
-
-  # Delete players who have zero chips
   delete_players();
-
   generate_xls();
-
-  # Draw the screen
   draw_screen();
-
-  # Get list of players from hash
-  my @players = keys(%players);
-
-  # Get number of players left in tourney
-  my $number_of_players = @players;
-
-  # Check to see if tourney is over
-  my $tables_in_use = 0;
-  foreach(@players) {
-    my $player = $_;
-    if ( $players{$player}{'table'} !~ /none/ ) {
-      $tables_in_use++;
-    }
-  }
-  if ( $tourney_running eq 1 ) {
-    #if (( $number_of_players < 2 ) or ( $tables_in_use eq 0 )){
-    if ( $number_of_players < 2 ){
-      draw_screen();
-      print "\nEnd of tourney.\n";
-
-      history();
-
-      print "\n\nThank you for using Lightning Chip Tourney!\n\n";
-      sleep 2;
-      delete_storable();
-      exit;
-    }
-  }
-
-  # Build menu
-  my $done = 0;
-  my $choice;
-  ReadMode 4;
-  undef($key);
-  while ( !$done ) {
-    if ( defined( $key = ReadKey(-1) ) ) {
-      $choice = uc ( $key);
-      $done = 1 if $choice eq 'Q';
-      $done = 1 if $choice eq 'N';
-      $done = 1 if $choice eq 'A';
-      $done = 1 if $choice eq 'D';
-      $done = 1 if $choice eq 'I';
-      $done = 1 if $choice eq 'G';
-      $done = 1 if $choice eq 'R';
-      $done = 1 if $choice eq 'T';
-      $done = 1 if $choice eq 'C';
-      $done = 1 if $choice eq 'P';
-      $done = 1 if $choice eq 'E';
-      $done = 1 if $choice eq 'O';
-      if ( $tourney_running eq 1 ) {
-        $done = 1 if $choice eq 'M';
-        $done = 1 if $choice eq 'H';
-        $done = 1 if $choice eq 'L';
-        $done = 1 if $choice eq 'U';
-        $done = 1 if $choice eq 'E';
-        $done = 1 if $choice eq 'Y';
-        $done = 1 if $choice eq 'F';
-        $done = 1 if $choice eq 'S';
-      }
-      if ( $tourney_running eq 0 ) {
-        $done = 1 if $choice eq 'B';
-        $done = 1 if $choice eq 'X';
-      }
-    }
-  }
-  ReadMode 0;
-
-  # Call subroutines based on menu selection
-  if ( $choice eq 'Q'  ) { quit_program()         }
-  if ( $choice eq 'N'  ) { new_player()           }
-  if ( $choice eq 'D'  ) { delete_player()        }
-  if ( $choice eq 'A'  ) { new_table()            }
-  if ( $choice eq 'R'  ) { delete_table()         }
-  if ( $choice eq 'B'  ) { start_tourney()        }
-  if ( $choice eq 'G'  ) { give_chip()            }
-  if ( $choice eq 'T'  ) { take_chip()            }
-  if ( $choice eq 'L'  ) { loser()                }
-  if ( $choice eq 'E'  ) { enter_shuffle_mode()   }
-  if ( $choice eq 'C'  ) { switch_colors()        }
-  if ( $choice eq 'M'  ) { move_player()          }
-  if ( $choice eq 'H'  ) { history()              }
-  if ( $choice eq 'P'  ) { new_player_from_db()   }
-  if ( $choice eq 'I'  ) { edit_player_db()       }
-  if ( $choice eq 'U'  ) { undo_last_loser()      }
-  if ( $choice eq 'F'  ) { forfeit()              }
-  if ( $choice eq 'Y'  ) { list_players()         }
-  if ( $choice eq 'O'  ) { setup_remote_display() }
-  if ( $choice eq 'S'  ) { shuffle_stack()        }
-  if ( $choice eq 'X'  ) { select_file()          }
-}# End of MAIN LOOP
+  check_if_over();
+  menu();
+}
 
 sub read_remote_display {
   print "Reading remote display info\n";
   my @remote_server;
   if ( -e $remote_display ) {
-    open REMOTE_DISPLAY, "<$remote_display" or die;
+	  print "remote_display $remote_display\n";
+    open REMOTE_DISPLAY, "<$remote_display" or die "$!";
     @remote_server = <REMOTE_DISPLAY>;
     close REMOTE_DISPLAY;
     $remote_user    = $remote_server[0];
@@ -554,7 +221,7 @@ END_HEADER
     print "Player                         Time       Won        Chips      Table \n\n";
     print STATUS "Player                         Time       Won        Chips      Table \n\n";
   }
-  # Print double column header if between 19 and 30
+  # Print double column header if between 16 and 30
   if ( ($master_number_of_players > 15) && ($master_number_of_players < 31) ) {
     print "Player                     Time  Won Chips Table           Player                    Time   Won Chips Table\n\n";
     print STATUS "Player                     Time  Won Chips Table           Player                    Time   Won Chips Table\n\n";
@@ -596,7 +263,6 @@ END_HEADER
       my @split  = split /:/, $line;
       my $table  = $split[0];
       my $player = $split[1];
-      #my $display_player = substr($player, 0, 24);
       my $display_player = $player;
       my $chips  = $split[2];
       my $won    = $split[3];
@@ -656,11 +322,9 @@ END_HEADER
     my @split  = split /:/, $line;
     my $table  = $split[0];
     my $player = $split[1];
-    #my $display_player = substr($player, 0, 24);
     my $display_player = $player;
     my $chips  = $split[2];
     my $won    = $split[3];
-    #my $time   = $split[4];
     my $time   = "30";
     my $time_start = $players{$player}{'time_start'};
     my $current_time = time();
@@ -2749,5 +2413,278 @@ sub generate_xls {
  
   $workbook->close() or warn "$!";
   close TABFILE;
+}
+
+sub get_current_date {
+
+  my $argue = shift;
+  my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+  if ( $min < 10 ) { $min = "0$min" }
+  if ( $sec < 10 ) { $sec = "0$sec" }
+  $year = $year + 1900;
+
+  my @abbr = qw(January February March April May June July August September October November December);
+  if ( $hour > 12 ) {
+    $hour = $hour - 12;
+  }
+  if ( $argue eq '2' ) {
+    return $DATE2 = "$abbr[$mon]"."_$mday"."_$year";
+  } else {
+    return $DATE  = "$hour".'_'."$min"."_$sec"."_$abbr[$mon]"."_$mday"."_$year";
+  }
+}
+
+sub setup_folders {
+  if ( $^O =~ /MSWin32/ ) {
+    system("title Lightning Tournament");
+    chomp(my $profile = `set userprofile`);
+    $profile          =~ s/userprofile=//i;
+    my $homedir       = $profile . "\\desktop\\Chip_Results";
+
+    # If desktop folder exists do nothing, if not then create it
+    if ( -d $homedir ) {
+      print "Homedir $homedir exists.\n";
+    } else {
+      make_path($homedir);
+    }
+
+    $desktop      = $profile . "\\desktop\\Chip_Results\\$desktop";
+    $desktop_csv  = $profile . "\\desktop\\Chip_Results\\$desktop_csv";
+    $outfile_csv  = $profile . "\\desktop\\Chip_Results\\$outfile_csv";
+    $outfile_xlsx = $profile . "\\desktop\\Chip_Results\\$outfile_xlsx";
+
+
+    if ( exists $ENV{'LOCALAPPDATA'} ) {
+      my $local_app_data                 = $ENV{'LOCALAPPDATA'};
+      $status                            = "$local_app_data\\$status";
+      $remote_display                    = "$local_app_data\\$remote_display";
+      $fargo_storage_file                = "$local_app_data\\$fargo_storage_file";
+      $chip_rating_storage_file          = "$local_app_data\\$chip_rating_storage_file";
+      $player_db                         = "$local_app_data\\$player_db";
+      $storable_send                     = "$local_app_data\\$storable_send";
+      $storable_players                  = "$local_app_data\\$storable_players";
+      $storable_tables                   = "$local_app_data\\$storable_tables";
+      $storable_dead                     = "$local_app_data\\$storable_dead";
+      $storable_stack                    = "$local_app_data\\$storable_stack";
+      $storable_whobeat                  = "$local_app_data\\$storable_whobeat";
+      $storable_whobeat_csv              = "$local_app_data\\$storable_whobeat_csv";
+      $storable_tourney_running          = "$local_app_data\\$storable_tourney_running";
+      $storable_master_number_of_players = "$local_app_data\\$storable_master_number_of_players";
+      $namestxt                          = "$local_app_data\\$namestxt";
+      $tournament_name                   = "$local_app_data\\$tournament_name";
+    } else {
+      $status                            = $profile . "\\desktop\\$status";
+      $remote_display                    = $profile . "\\desktop\\$remote_display";
+      $fargo_storage_file                = $profile . "\\desktop\\$fargo_storage_file";
+      $chip_rating_storage_file          = $profile . "\\desktop\\$chip_rating_storage_file";
+      $player_db                         = $profile . "\\desktop\\$player_db";
+      $storable_send                     = $profile . "\\desktop\\$storable_send";
+      $storable_players                  = $profile . "\\desktop\\$storable_players";
+      $storable_tables                   = $profile . "\\desktop\\$storable_tables";
+      $storable_dead                     = $profile . "\\desktop\\$storable_dead";
+      $storable_stack                    = $profile . "\\desktop\\$storable_stack";
+      $storable_whobeat                  = $profile . "\\desktop\\$storable_whobeat";
+      $storable_whobeat_csv              = $profile . "\\desktop\\$storable_whobeat_csv";
+      $storable_tourney_running          = $profile . "\\desktop\\$storable_tourney_running";
+      $storable_master_number_of_players = $profile . "\\desktop\\$storable_master_number_of_players";
+      $namestxt                          = $profile . "\\desktop\\$namestxt";
+      $tournament_name                   = $profile . "\\desktop\\$tournament_name";
+    }
+  }
+}
+
+sub set_size_of_console {
+  # Set the size of the console
+  if ( $^O =~ /MSWin32/ ) {
+    system("mode con lines=35 cols=140");
+  }
+  if ( $^O =~ /darwin/ ) {
+    system("osascript -e 'tell app \"Terminal\" to set background color of first window to {0, 0, 0, -16373}'");
+    system("osascript -e 'tell app \"Terminal\" to set font size of first window to \"12\"'");
+    system("osascript -e 'tell app \"Terminal\" to set bounds of front window to {300, 30, 1200, 900}'");
+  }
+}
+
+
+sub populate_sample_data {
+
+  # If names.txt exits populate the tourney with sample data
+  if ( -e $namestxt ) {
+    my $filename = $namestxt;
+    open my $handle, '<', $filename;
+    my @names = <$handle>;
+    close $handle;
+    chomp(@names);
+    foreach(@names) {
+      my $line = $_;
+      my @split = split /:/, $line;
+      my $player_name                    = $split[0];
+      $players{$player_name}{'chips'}    = $split[1];
+      $players{$player_name}{'table'}    = $split[2];
+      $players{$player_name}{'fargo_id'} = $split[3];
+      $players{$player_name}{'won'}      = 0;
+    }
+    $tables{'5'}=1;
+  }
+  if ( -e $tournament_name ) {
+    my $filename = $tournament_name;
+    open my $handle, '<', $filename;
+    $tourney_name = <$handle>;
+    chomp($tourney_name);
+    close $handle;
+  }
+}
+
+sub print_logo {
+  # print Lightning Chip Logo
+  print color($color) unless ( $Colors eq 'off');
+  print "\n\n\n\n\n";
+  print " _     _       _     _         _                ____ _     _       \n";
+  print "| |   (_) __ _| |__ | |_ _ __ (_)_ __   __ _   / ___| |__ (_)_ __  \n";
+  print "| |   | |/ _` | '_ \\| __| '_ \\| | '_ \\ / _` | | |   | '_ \\| | '_ \\ \n";
+  print "| |___| | (_| | | | | |_| | | | | | | | (_| | | |___| | | | | |_)|\n";
+  print "|_____|_|\\__, |_| |_|\\__|_| |_|_|_| |_|\\__, |  \\____|_| |_|_| .__/ \n";
+  print "         |___/                         |___/                |_|    \n\n\n\n\n\n";
+  print "                                           --by Martin Colello\n";
+  play_sound_effect();
+  sleep 1;
+}
+
+sub play_sound_effect {
+  # Play sound effect
+  if ( $^O =~ /MSWin32/ ) {
+    Win32::Sound::Play("lightning.wav");
+  }
+  if ( $^O =~ /linux/ ) {
+    my $paplay = '/usr/bin/paplay';
+    if ( -e $paplay ) {
+      system '/usr/bin/paplay', 'lightning.wav';
+    }
+  }
+
+  sleep 1;
+}
+
+sub check_if_over {
+  # Check to see if tourney is over
+
+  # Get list of players from hash
+  my @players = keys(%players);
+
+  # Get number of players left in tourney
+  my $number_of_players = @players;
+
+  my $tables_in_use = 0;
+  foreach(@players) {
+    my $player = $_;
+    if ( $players{$player}{'table'} !~ /none/ ) {
+      $tables_in_use++;
+    }
+  }
+  if ( $tourney_running eq 1 ) {
+    #if (( $number_of_players < 2 ) or ( $tables_in_use eq 0 )){
+    if ( $number_of_players < 2 ){
+      draw_screen();
+      print "\nEnd of tourney.\n";
+      print "\n\nThank you for using Lightning Chip Tourney!\n\n";
+      sleep 2;
+      delete_storable();
+      exit;
+    }
+  }
+}
+
+sub menu {
+  # Build menu
+  my $done = 0;
+  my $choice;
+  ReadMode 4;
+  undef($key);
+  my $loop_check = 0;
+  while ( !$done ) {
+    if ( defined( $key = ReadKey(-1) ) ) {
+      $choice = uc ( $key);
+      $done = 1 if $choice eq 'Q';
+      $done = 1 if $choice eq 'N';
+      $done = 1 if $choice eq 'A';
+      $done = 1 if $choice eq 'D';
+      $done = 1 if $choice eq 'I';
+      $done = 1 if $choice eq 'G';
+      $done = 1 if $choice eq 'R';
+      $done = 1 if $choice eq 'T';
+      $done = 1 if $choice eq 'C';
+      $done = 1 if $choice eq 'P';
+      $done = 1 if $choice eq 'E';
+      $done = 1 if $choice eq 'O';
+      if ( $tourney_running eq 1 ) {
+        $done = 1 if $choice eq 'M';
+        $done = 1 if $choice eq 'H';
+        $done = 1 if $choice eq 'L';
+        $done = 1 if $choice eq 'U';
+        $done = 1 if $choice eq 'E';
+        $done = 1 if $choice eq 'Y';
+        $done = 1 if $choice eq 'F';
+        $done = 1 if $choice eq 'S';
+      }
+      if ( $tourney_running eq 0 ) {
+        $done = 1 if $choice eq 'B';
+        $done = 1 if $choice eq 'X';
+      }
+    }
+      my $seconds_since_started = time() - $^T;
+      if (( $seconds_since_started % 300 == 0 ) && ( $loop_check == 0 )) {
+        $remote_server_check = 1;
+	$loop_check = 1;
+      }
+  }
+  ReadMode 0;
+
+  # Call subroutines based on menu selection
+  if ( $choice eq 'Q'  ) { quit_program()         }
+  if ( $choice eq 'N'  ) { new_player()           }
+  if ( $choice eq 'D'  ) { delete_player()        }
+  if ( $choice eq 'A'  ) { new_table()            }
+  if ( $choice eq 'R'  ) { delete_table()         }
+  if ( $choice eq 'B'  ) { start_tourney()        }
+  if ( $choice eq 'G'  ) { give_chip()            }
+  if ( $choice eq 'T'  ) { take_chip()            }
+  if ( $choice eq 'L'  ) { loser()                }
+  if ( $choice eq 'E'  ) { enter_shuffle_mode()   }
+  if ( $choice eq 'C'  ) { switch_colors()        }
+  if ( $choice eq 'M'  ) { move_player()          }
+  if ( $choice eq 'H'  ) { history()              }
+  if ( $choice eq 'P'  ) { new_player_from_db()   }
+  if ( $choice eq 'I'  ) { edit_player_db()       }
+  if ( $choice eq 'U'  ) { undo_last_loser()      }
+  if ( $choice eq 'F'  ) { forfeit()              }
+  if ( $choice eq 'Y'  ) { list_players()         }
+  if ( $choice eq 'O'  ) { setup_remote_display() }
+  if ( $choice eq 'S'  ) { shuffle_stack()        }
+  if ( $choice eq 'X'  ) { select_file()          }
+
+}
+
+sub setup_files {
+  $status                            = "$DATE".'status.html';
+  $remote_display                    = 'remote_display.txt';
+  $fargo_storage_file                = 'fargo.txt';
+  $tournament_name                   = 'tournament_name.txt';
+  $chip_rating_storage_file          = 'chip_rating.txt';
+  $player_db                         = 'chip_player.txt';
+  $storable_send                     = 'storable_send.txt';
+  $storable_players                  = 'storable_players.txt';
+  $storable_tables                   = 'storable_tables.txt';
+  $storable_dead                     = 'storable_dead.txt';
+  $storable_stack                    = 'storable_stack.txt';
+  $storable_whobeat                  = 'storable_whobeat.txt';
+  $storable_whobeat_csv              = 'storable_whobeat_csv.txt';
+  $storable_tourney_running          = 'storable_tourney_running.txt';
+  $storable_master_number_of_players = 'storable_master_number_of_players.txt';
+  $namestxt                          = 'names.txt';
+  $desktop                           = 'chip_results_'."$DATE".'.txt';
+  $desktop_csv                       = 'chip_results_'."$DATE".'.csv';
+  $outfile_xlsx                      = 'chip_results_'."$DATE".'.xlsx';
+  $outfile                           = "$desktop";
+  $outfile_csv                       = "$desktop_csv";
 }
 
