@@ -40,7 +40,7 @@ setup_files();
 setup_folders();
 
 # Setup some global hashes and variables
-my $version = 'v9.86';           # Installed version of software
+my $version = 'v9.87';           # Installed version of software
 my $master_number_of_players = 0;
 my $remote_server_check = 1;     # Trigger whether or not to use sftp
 my ($remote_user,$remote_pass);  # User id for remote display
@@ -694,10 +694,12 @@ sub print_footer {
     print colored("\n       SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE       ", 'bright_yellow on_red'), "\n";
   }
   if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'off' ) and ( $version eq $check_version ) )  {
-     print colored("\n    http://lightningchip.xyz for live updates!                                                                           ", 'bright_yellow on_blue'), "\n";
+     my $printit = sprintf ( "%-60s %60s", " $event $game",'http://lightningchip.xyz for live updates! ' );
+     print colored("\n$printit\n",'bright_yellow on_blue');
   }
   if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'off' ) and ( $version ne $check_version ) )  {
-     print colored("\n    http://lightningchip.xyz for live updates!               New software version available!                             ", 'bright_yellow on_blue'), "\n";
+     my $printit = sprintf ( "%-60s %60s", "New software version available!   $event",'http://lightningchip.xyz for live updates! ' );
+     print colored("\n$printit\n",'bright_yellow on_blue');
   }
   if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'on' ) )  {
     print         "\n       SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE       \n";
