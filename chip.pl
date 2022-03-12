@@ -23,7 +23,6 @@ use Net::Ping;
 use File::Path qw( make_path );
 use Win32::GUI();
 use Spreadsheet::BasicRead;
-use Schedule::Poll;
 use if $^O eq "MSWin32", "Win32::Sound";
 
 #$SIG{INT} = 'IGNORE';
@@ -40,7 +39,7 @@ setup_files();
 setup_folders();
 
 # Setup some global hashes and variables
-my $version = 'v9.87';           # Installed version of software
+my $version = 'v9.88';           # Installed version of software
 my $master_number_of_players = 0;
 my $remote_server_check = 1;     # Trigger whether or not to use sftp
 my ($remote_user,$remote_pass);  # User id for remote display
@@ -484,13 +483,14 @@ END_HEADER
         print STATUS "<br><BR>Fargo List:<br>\n";
         my @list_players = keys(%players);
         push(@list_players, @dead);
+	@list_players = sort(@list_players);
         my @output_list_players;
         foreach(@list_players) {
           my $line = $_;
-	  if ( $line !~ / \(\d\d\d\)/ ) { next }
+	  if ( $line !~ /\d\d\d/ ) { next }
           $line =~ /(.*?)\(/;
 	  my $temp_player_name = $1;
-          $line =~ /(\d\d\d)/;
+          $line =~ /(\d+)/;
 	  my $temp_fargo = $1;
           push @output_list_players, "$temp_player_name ($temp_fargo)";
         }
@@ -683,7 +683,7 @@ END_HEADER
 
   print STATUS "</pre></body></html>\n";
   close STATUS;
-  if ( $tourney_running eq 1 ) {
+  if ( $master_number_of_players gt 1 ) {
     send_status_to_server();
   }
 }
@@ -694,11 +694,11 @@ sub print_footer {
     print colored("\n       SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE      SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE     SHUFFLE       ", 'bright_yellow on_red'), "\n";
   }
   if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'off' ) and ( $version eq $check_version ) )  {
-     my $printit = sprintf ( "%-60s %60s", " $event $game",'http://lightningchip.xyz for live updates! ' );
+     my $printit = sprintf ( "%-60s %60s", " $event ($game)",'http://lightningchip.xyz for live updates! ' );
      print colored("\n$printit\n",'bright_yellow on_blue');
   }
   if ( ( $tourney_running eq 1 ) and ( $Colors eq 'on'  ) and ( $shuffle_mode eq 'off' ) and ( $version ne $check_version ) )  {
-     my $printit = sprintf ( "%-60s %60s", "New software version available!   $event",'http://lightningchip.xyz for live updates! ' );
+     my $printit = sprintf ( "%-60s %60s", " New software version available!",'http://lightningchip.xyz for live updates! ' );
      print colored("\n$printit\n",'bright_yellow on_blue');
   }
   if ( ( $tourney_running eq 1 ) and ( $Colors eq 'off' ) and ( $shuffle_mode eq 'on' ) )  {
@@ -2229,16 +2229,17 @@ sub parse_duration {
 sub delete_storable {
 
   # Delete recovery files
-  unlink("$storable_send");
-  unlink("$storable_players");
-  unlink("$storable_tables");
-  unlink("$storable_dead");
-  unlink("$storable_stack");
-  unlink("$storable_whobeat");
-  unlink("$storable_whobeat_csv");
-  unlink("$storable_tourney_running");
-  unlink("$storable_master_number_of_players");
-  unlink("$status");
+  unlink("$storable_send") or warn;
+  unlink("$storable_players") or warn;
+  unlink("$storable_tables") or warn;
+  unlink("$storable_dead") or warn;
+  unlink("$storable_stack") or warn;
+  unlink("$storable_whobeat") or warn;
+  unlink("$storable_whobeat_csv") or warn;
+  unlink("$storable_tourney_running") or warn;
+  unlink("$storable_master_number_of_players") or warn;
+  unlink("$status") or warn;
+  if ( -f $outfile_csv ) { unlink("$outfile_csv") or warn }
 }
 
 sub version {
@@ -2307,14 +2308,19 @@ sub read_xls_file {
     foreach(@results){
       my $line = $_;
       if ( $line =~ /\w+,\d\d\d/ ) {
-        $line =~ /([\/-\w\s]+),(\d\d\d),(\d+)/;
+        $line =~ /([-\)\(\/\w\s]+),(\d\d\d),(\d+)/;
         my $name  = $1;
+	$name =~ s/\(//g;
+	$name =~ s/\)//g;
         my $fargo = $2;
         my $chips = $3;
         my $fargo_id = 0;
         chomp($name);
         chomp($fargo);
         if (( $name =~ /\w+/ ) && ( $fargo =~ /^\d\d\d+$/ )) {
+          if (( $name =~ /colello/i ) && ( $name =~ /mart/i )) {
+	    $name = "Vince Colello";
+	  }
           #my $chips = get_start_chips($fargo);
           my $name = "$name ".'('."$fargo".')';
           $players{$name}{'chips'}    = $chips;
@@ -2331,8 +2337,7 @@ sub read_xls_file {
       my $line = $_;
       print "line: $line\n";
       if ( $line =~ /\w+,\d\d\d/ ) {
-	      print "line is $line\n";
-        $line =~ /([\/-\w\s]+),(\d\d\d),([\/-\w\s]+),(\d\d\d),(\d+),(\d+)/;
+        $line =~ /([-\)\(\/\w\s]+),(\d\d\d),([-\(\)\/-\w\s]+),(\d\d\d),(\d+),(\d+)/;
         my $name        = $1;
         my $fargo       = $2;
         my $name2       = $3;
@@ -2342,13 +2347,20 @@ sub read_xls_file {
 	my $fargo_total = $fargo + $fargo2;
         chomp($name);
         chomp($name2);
+	print "name $name name2 $name2\n";
+        if (( $name =~ /colello/i ) && ( $name =~ /mart/i )) {
+          $name = "Vince Colello";
+        }
+        if (( $name2 =~ /colello/i ) && ( $name =~ /mart/i )) {
+          $name2 = "Vince Colello";
+        }
         chomp($fargo);
         chomp($fargo2);
         chomp($fargo_total);
         if (( $name =~ /\w+/ ) && ( $fargo =~ /^\d\d\d+$/ )) {
-  	  $name  =~ /(\w+)\s+(\w)/;
+  	  $name  =~ /([-\w]+)\s+(\w)/;
 	  $name  = "$1 $2" unless (( ! defined($1) ) or ( ! defined($2) ));
-	  $name2 =~ /(\w+)\s+(\w)/;
+	  $name2 =~ /([-\w]+)\s+(\w)/;
 	  $name2 = "$1 $2" unless (( ! defined($1) ) or ( ! defined($2) ));
 	  my $combined_name = "$name-$name2 ".'('."$fargo_total".')';
           $players{$combined_name}{'chips'}    = $chips;
@@ -2358,6 +2370,7 @@ sub read_xls_file {
           $players{$combined_name}{'won'}      = 0;
         }
       }
+      #yesorno('any');
     }
   } 
 }
@@ -2415,6 +2428,7 @@ sub generate_xls {
  
   $workbook->close() or warn "$!";
   close TABFILE;
+  unlink($outfile_csv) or warn;
 }
 
 sub get_current_date {
