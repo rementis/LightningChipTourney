@@ -39,7 +39,7 @@ setup_files();
 setup_folders();
 
 # Setup some global hashes and variables
-my $version = 'v9.88';           # Installed version of software
+my $version = 'v9.89';           # Installed version of software
 my $master_number_of_players = 0;
 my $remote_server_check = 1;     # Trigger whether or not to use sftp
 my ($remote_user,$remote_pass);  # User id for remote display
@@ -804,7 +804,13 @@ sub loser {
     return;
   }
 
-  my $numselection = print_menu_array(@active_players);  
+  my $numselection;
+  if ( $count_active_players > 19 ) { 
+    $numselection = print_menu_array_columns(@active_players);  
+  } else {
+    $numselection = print_menu_array(@active_players);  
+  }
+
   if ( $numselection == 1000 ) {
     return;
   }
@@ -1270,8 +1276,10 @@ sub new_player {
     }
 
     # If tourney is already started, put new player at the top of the stack
+    # and add to master number of players
     if ( $tourney_running eq 1 ) {
       unshift @stack, $name;
+      $master_number_of_players++;
     }
 
     # Write out new fargo keys file
@@ -1831,6 +1839,37 @@ sub print_menu_array {
   return $numselection;
 }
 
+sub print_menu_chunk {
+
+  my $num = 0;
+  my @array = @_;
+  chomp(@array);
+  my $number_of_elements = @array;
+  my @final_print;
+  if ( $number_of_elements > 63 ) {
+    @final_print = array_chunk(4, @array);
+  } elsif ( $number_of_elements > 31 ) {
+    @final_print = array_chunk(3, @array);
+  } elsif ( $number_of_elements > 15 ) {
+    @final_print = array_chunk(2, @array);
+  } else {
+    @final_print = array_chunk(1, @array);
+  }
+
+  foreach(@final_print) {
+    $num++;
+    my $print = $_;
+    if ( $color eq 'bold yellow' ) {
+      $color = 'bold cyan';
+    } else {
+      $color = 'bold yellow';
+    }
+    print color($color) unless ( $Colors eq 'off');
+    print "$num: @$print\n";
+  }
+}
+
+
 # Ugly hacky, but you need more data on the screen at once
 sub print_menu_array_columns {
   my @array = @_;
@@ -2075,8 +2114,8 @@ sub history {
   # Open log file
   #if ( $^O =~ /MSWin32/     ) { system ("\"$outfile_csv\"") }
   #if ( $^O =~ /MSWin32/     ) { system (1,"\"$outfile_xlsx\"") }
-  if ( $^O =~ /MSWin32/     ) { system (1,"\"$outfile_csv\"") }
-  if ( $^O =~ /next|darwin/ ) { system("open $outfile_csv") }
+  if ( $^O =~ /MSWin32/     ) { system (1,"\"$outfile_xlsx\"") }
+  if ( $^O =~ /next|darwin/ ) { system("open $outfile_xlsx") }
 }
 
 sub get_start_chips {
@@ -2318,9 +2357,7 @@ sub read_xls_file {
         chomp($name);
         chomp($fargo);
         if (( $name =~ /\w+/ ) && ( $fargo =~ /^\d\d\d+$/ )) {
-          if (( $name =~ /colello/i ) && ( $name =~ /mart/i )) {
-	    $name = "Vince Colello";
-	  }
+          if (( $name =~ /colello/i ) && ( $name =~ /mart/i )) { $name = "Vince Colello" }
           #my $chips = get_start_chips($fargo);
           my $name = "$name ".'('."$fargo".')';
           $players{$name}{'chips'}    = $chips;
@@ -2348,12 +2385,8 @@ sub read_xls_file {
         chomp($name);
         chomp($name2);
 	print "name $name name2 $name2\n";
-        if (( $name =~ /colello/i ) && ( $name =~ /mart/i )) {
-          $name = "Vince Colello";
-        }
-        if (( $name2 =~ /colello/i ) && ( $name =~ /mart/i )) {
-          $name2 = "Vince Colello";
-        }
+        if (( $name  =~ /colello/i ) && ( $name =~ /mart/i )) { $name  = "Vince Colello" }
+        if (( $name2 =~ /colello/i ) && ( $name =~ /mart/i )) { $name2 = "Vince Colello" }
         chomp($fargo);
         chomp($fargo2);
         chomp($fargo_total);
@@ -2702,5 +2735,14 @@ sub setup_files {
   $outfile_xlsx                      = 'chip_results_'."$DATE".'.xlsx';
   $outfile                           = "$desktop";
   $outfile_csv                       = "$desktop_csv";
+}
+
+sub array_chunk {
+  my ($num, @arr) = @_;
+  my @ret;
+  while (@arr) {
+    push(@ret, [splice @arr, 0, $num]);
+  }
+  return @ret;
 }
 
