@@ -31,7 +31,7 @@ my $DATE  = get_current_date();
 my $DATE2 = get_current_date('2');
 
 my ($status,$remote_display,$fargo_storage_file,$tournament_name,$chip_rating_storage_file,$player_db);
-my ($storable_send,$storable_players,$storable_tables,$storable_dead,$storable_stack,$storable_whobeat);
+my ($storable_event,$storable_send,$storable_players,$storable_tables,$storable_dead,$storable_stack,$storable_whobeat);
 my ($storable_whobeat_csv,$storable_tourney_running,$storable_master_number_of_players,$namestxt);
 my ($desktop,$desktop_csv,$outfile_xlsx,$outfile,$outfile_csv);
 
@@ -39,7 +39,7 @@ setup_files();
 setup_folders();
 
 # Setup some global hashes and variables
-my $version = 'v9.89';           # Installed version of software
+my $version = 'v9.90';           # Installed version of software
 my $master_number_of_players = 0;
 my $remote_server_check = 1;     # Trigger whether or not to use sftp
 my ($remote_user,$remote_pass);  # User id for remote display
@@ -932,6 +932,7 @@ sub loser {
   }
 
   store \$send,                     "$storable_send";
+  store \$event,                    "$storable_event";
   store \%players,                  "$storable_players";
   store \%tables,                   "$storable_tables";
   store \@dead,                     "$storable_dead";
@@ -1961,6 +1962,7 @@ sub game_and_event {
       print "Restoring previous tournament.\n";
       sleep 2;
       $send                     = ${retrieve("$storable_send")};
+      $event                    = ${retrieve("$storable_event")};
       %players                  = %{retrieve("$storable_players")};
       %tables                   = %{retrieve("$storable_tables")};
       @dead                     = @{retrieve("$storable_dead")};
@@ -2269,6 +2271,7 @@ sub delete_storable {
 
   # Delete recovery files
   unlink("$storable_send") or warn;
+  unlink("$storable_event") or warn;
   unlink("$storable_players") or warn;
   unlink("$storable_tables") or warn;
   unlink("$storable_dead") or warn;
@@ -2511,6 +2514,7 @@ sub setup_folders {
       $chip_rating_storage_file          = "$local_app_data\\$chip_rating_storage_file";
       $player_db                         = "$local_app_data\\$player_db";
       $storable_send                     = "$local_app_data\\$storable_send";
+      $storable_event                    = "$local_app_data\\$storable_event";
       $storable_players                  = "$local_app_data\\$storable_players";
       $storable_tables                   = "$local_app_data\\$storable_tables";
       $storable_dead                     = "$local_app_data\\$storable_dead";
@@ -2528,6 +2532,7 @@ sub setup_folders {
       $chip_rating_storage_file          = $profile . "\\desktop\\$chip_rating_storage_file";
       $player_db                         = $profile . "\\desktop\\$player_db";
       $storable_send                     = $profile . "\\desktop\\$storable_send";
+      $storable_event                    = $profile . "\\desktop\\$storable_event";
       $storable_players                  = $profile . "\\desktop\\$storable_players";
       $storable_tables                   = $profile . "\\desktop\\$storable_tables";
       $storable_dead                     = $profile . "\\desktop\\$storable_dead";
@@ -2721,6 +2726,7 @@ sub setup_files {
   $chip_rating_storage_file          = 'chip_rating.txt';
   $player_db                         = 'chip_player.txt';
   $storable_send                     = 'storable_send.txt';
+  $storable_event                    = 'storable_send.txt';
   $storable_players                  = 'storable_players.txt';
   $storable_tables                   = 'storable_tables.txt';
   $storable_dead                     = 'storable_dead.txt';
