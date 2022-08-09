@@ -4,7 +4,7 @@ See "Releases" for Windows installer.
 
 [Video Demo](https://youtu.be/cDDldyLX9ng)
 
-Now version 9.88 with remote display!  Anyone can follow your tournament results live!
+Now version 10.04 with player texting!  Anyone can follow your tournament results live!
 
 Contact me to enable an account for this feature, it's free!
 
