@@ -4,7 +4,7 @@ See "Releases" for Windows installer.
 
 [Video Demo](https://youtu.be/cDDldyLX9ng)
 
-Now version 10.24 with player texting!  Anyone can follow your tournament results live!
+Now with player texting!  Anyone can follow your tournament results live!
 
 Contact me to enable an account for this feature, it's free!
 
