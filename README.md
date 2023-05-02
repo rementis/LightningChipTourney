@@ -29,4 +29,4 @@ anything you like for the Fargo number.
 
 Lightning Chip Tourney has a built in database which keeps track of players previously entered, as well as their Fargo ID.  It also has the ability to automatically assign a chip count based on Fargo score.
 
-Latest update January 2023, now when a table is removed from the tourney the winner gets to flip for break on next match.  Foreit key now available!
+
