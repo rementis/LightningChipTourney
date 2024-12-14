@@ -1,3 +1,5 @@
+![Lightning Chip Logo.](https://lightningchip.xyz/wp-content/uploads/2022/03/SPLASH.jpg)
+
 Lightning Chip Tourney           --by Martin Colello
 
 See "Releases" for Windows installer.
